@@ -89,7 +89,7 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
 
 <header>
   <h1>🌿 Verdura e Frutta Felice</h1>
-  <p>Compila e invia il tuo ordine</p>
+  <p>Ordini aperti fino a <strong style="color:#b8ddc0;">venerdì ore 14:00</strong></p>
   <div class="wpill" id="wpill">caricamento...</div>
 </header>
 
@@ -159,9 +159,9 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
     </div>
     <div class="warning-box">
       <strong>⚠️ Leggi prima di confermare</strong>
-      <p>Una volta confermato, l'ordine è <strong>definitivo e non modificabile online</strong>.<br><br>
-      Non sarà possibile cancellarlo o cambiarlo tramite questo sito.<br><br>
-      Per qualsiasi modifica dopo la conferma contatta direttamente <strong>Valeria</strong> per telefono.</p>
+      <p>Confermando l'ordine, accetti che sia <strong>definitivo e non modificabile</strong>.<br><br>
+      Per cambiamenti o cancellazioni dopo la conferma,<br>
+      chiama direttamente <strong>Valeria</strong>.</p>
     </div>
     <div id="confirm-err" class="errbox" style="display:none;"></div>
     <button class="confirm-btn" id="confirm-btn" onclick="doSubmit()">✓ Confermo l'ordine</button>
@@ -307,14 +307,22 @@ function goConfirm() {
   const name=(document.getElementById("cname").value||"").trim();
   const tel =(document.getElementById("ctel").value||"").trim();
   let ok=true;
-  ["cname","ctel"].forEach(id=>{
-    const v=(document.getElementById(id).value||"").trim();
-    document.getElementById(id).classList.toggle("err",!v);
-    if(!v) ok=false;
-  });
+
+  // Valida nome
+  document.getElementById("cname").classList.toggle("err",!name);
+  if(!name) ok=false;
+
+  // Valida telefono: 9-10 cifre (mobile italiano)
+  const telClean = tel.replace(/[\s\-\+]/g,"");
+  const telOk = /^\d{9,10}$/.test(telClean);
+  document.getElementById("ctel").classList.toggle("err",!telOk);
+  if(!telOk) ok=false;
+
   if(!ok){
     const eb=document.getElementById("errbox");
-    eb.textContent="Inserisci nome e telefono per continuare.";
+    eb.textContent=!name
+      ? "Inserisci il tuo nome per continuare."
+      : "Inserisci un numero di telefono valido (9-10 cifre).";
     eb.style.display="block"; return;
   }
   document.getElementById("errbox").style.display="none";
