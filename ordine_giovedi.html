@@ -196,16 +196,13 @@ const qty = {};
 function getWeekRange() {
   const now = new Date();
   const day = now.getDay();
-  // Giovedì più recente (0=dom → offset 4, 1=lun → 3, ... 4=gio → 0, 5=ven → -1→6 etc.)
-  const daysBack = (day + 3) % 7; // giorni trascorsi da giovedì
+  const daysBack = (day + 3) % 7;
   const thu = new Date(now);
   thu.setDate(now.getDate() - daysBack);
   thu.setHours(0,0,0,0);
-  const wed = new Date(thu);
-  wed.setDate(thu.getDate() + 6);
   const f = x => x.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-  return `${cap(f(thu))} – ${cap(f(wed))}`;
+  return cap(f(thu));
 }
 
 function getNextThursday() {
