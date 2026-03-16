@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Verdura e Frutta Felice — Ordina</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g:#2d6b47;--gd:#1e4d32;--gl:#eaf4ee;--gm:#74b893;
+  --sand:#f6f3ee;--t:#222;--tm:#7a736a;--b:#ddd8ce;
+  --red:#b03030;--redl:#fdf1f0;--r:13px;--rs:8px;
+}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--sand);color:var(--t);min-height:100vh;}
+header{background:var(--gd);padding:20px 20px 16px;text-align:center;}
+header h1{color:#fff;font-size:19px;font-family:Georgia,serif;font-weight:normal;letter-spacing:.4px;}
+header p{color:rgba(255,255,255,.65);font-size:13px;margin-top:4px;}
+.wpill{display:inline-block;background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);font-size:12px;padding:5px 14px;border-radius:99px;margin-top:10px;}
+.wrap{max-width:480px;margin:0 auto;padding:16px 14px;}
+.card{background:#fff;border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.field-lbl{font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block;}
+input[type=text],input[type=tel],textarea{width:100%;padding:12px 13px;font-size:16px;border:1.5px solid var(--b);border-radius:var(--rs);background:#fff;color:var(--t);outline:none;font-family:inherit;-webkit-appearance:none;}
+input:focus,textarea:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(45,107,71,.1);}
+input.err{border-color:var(--red)!important;}
+textarea{height:68px;resize:none;font-size:14px;}
+.field{margin-bottom:11px;}
+.sec-lbl{font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--b);}
+.pi{background:#fff;border:1.5px solid var(--b);border-radius:var(--r);padding:12px 14px;margin-bottom:9px;display:flex;align-items:center;gap:11px;transition:border-color .12s,background .12s;}
+.pi.on{border-color:var(--g);background:#fafffe;}
+.pinfo{flex:1;min-width:0;}
+.pname{font-size:15px;font-family:Georgia,serif;line-height:1.3;}
+.pprice{font-size:12px;color:var(--tm);margin-top:3px;}
+.qcol{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.qrow{display:flex;align-items:center;gap:7px;}
+.qbtn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--b);background:#fff;font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--g);font-weight:bold;-webkit-tap-highlight-color:transparent;user-select:none;}
+.qbtn:active{background:var(--gl);}
+.qval{min-width:30px;text-align:center;font-size:16px;font-weight:bold;}
+.qunit{font-size:11px;color:var(--tm);}
+.sumbox{background:var(--gl);border:1px solid #b8ddc0;border-radius:var(--r);padding:14px;margin-bottom:13px;}
+.sumtitle{font-size:13px;font-weight:bold;color:var(--gd);margin-bottom:8px;}
+.sumline{font-size:13px;line-height:1.9;color:#2a4f36;}
+.sumtotal{font-size:17px;font-weight:bold;color:var(--gd);margin-top:10px;border-top:1px solid #b8ddc0;padding-top:8px;}
+.sbtn{width:100%;padding:15px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:bold;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;}
+.sbtn:active{opacity:.8;}
+.sbtn:disabled{opacity:.4;cursor:not-allowed;}
+.footnote{font-size:11px;color:var(--tm);text-align:center;margin-top:8px;line-height:1.5;}
+.errbox{background:var(--redl);color:var(--red);border-radius:var(--rs);padding:11px 13px;font-size:13px;margin-bottom:12px;line-height:1.5;}
+/* CONFIRM */
+.confirm-hdr{background:var(--gd);border-radius:var(--r);padding:16px;margin-bottom:14px;text-align:center;}
+.confirm-hdr h2{color:#fff;font-family:Georgia,serif;font-weight:normal;font-size:18px;}
+.confirm-hdr p{color:rgba(255,255,255,.7);font-size:12px;margin-top:5px;}
+.confirm-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--b);}
+.confirm-row:last-child{border-bottom:none;}
+.confirm-row .pn{font-size:14px;}
+.confirm-row .ps{font-size:12px;color:var(--tm);margin-top:2px;}
+.confirm-row .pt{font-weight:bold;font-size:15px;white-space:nowrap;margin-left:12px;}
+.confirm-total{font-size:20px;font-weight:bold;color:var(--gd);margin-top:12px;padding-top:12px;border-top:2px solid var(--gm);}
+.warning-box{background:var(--redl);border:1.5px solid #f0b8b8;border-radius:var(--r);padding:15px 16px;margin-bottom:14px;}
+.warning-box strong{display:block;font-size:14px;color:var(--red);margin-bottom:8px;}
+.warning-box p{font-size:13px;color:var(--red);line-height:1.75;}
+.confirm-btn{width:100%;padding:15px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:bold;cursor:pointer;font-family:inherit;margin-bottom:10px;}
+.confirm-btn:active{opacity:.8;}
+.confirm-btn:disabled{opacity:.4;cursor:not-allowed;}
+.back-btn{width:100%;padding:13px;background:#fff;color:var(--t);border:1px solid var(--b);border-radius:var(--r);font-size:14px;cursor:pointer;font-family:inherit;}
+.back-btn:active{opacity:.75;}
+/* CHIUSO */
+.chiuso{text-align:center;padding:56px 20px;}
+.chiuso-icon{width:72px;height:72px;background:var(--redl);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:36px;}
+.chiuso h2{font-family:Georgia,serif;font-weight:normal;font-size:22px;margin-bottom:10px;color:var(--red);}
+.chiuso p{font-size:14px;color:var(--tm);line-height:1.8;}
+.next-open{display:inline-block;margin-top:16px;background:var(--gl);color:var(--g);padding:10px 20px;border-radius:var(--r);font-size:13px;font-weight:bold;}
+/* SUCCESS */
+.success{text-align:center;padding:56px 20px;}
+.sico{width:68px;height:68px;background:var(--gl);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:32px;}
+.success h2{font-family:Georgia,serif;font-weight:normal;font-size:22px;margin-bottom:10px;}
+.success p{font-size:14px;color:var(--tm);line-height:1.7;}
+.success .final-warn{font-size:12px;color:var(--red);margin-top:14px;padding:11px 14px;background:var(--redl);border-radius:var(--rs);line-height:1.6;}
+/* LOADING */
+.loading{text-align:center;padding:60px 20px;}
+.spin{width:34px;height:34px;border:3px solid var(--b);border-top-color:var(--g);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 16px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.loading p,.errstate p{font-size:14px;color:var(--tm);}
+.errstate{text-align:center;padding:60px 20px;}
+.retybtn{padding:11px 24px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:14px;cursor:pointer;font-family:inherit;margin-top:12px;}
+footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 Verdura e Frutta Felice</h1>
+  <p>Compila e invia il tuo ordine</p>
+  <div class="wpill" id="wpill">caricamento...</div>
+</header>
+
+<div class="wrap">
+
+  <div id="st-loading" class="loading">
+    <div class="spin"></div>
+    <p>Caricamento prodotti...</p>
+  </div>
+
+  <!-- ORDINI CHIUSI -->
+  <div id="st-chiuso" class="chiuso" style="display:none;">
+    <div class="chiuso-icon">🔒</div>
+    <h2>Ordini chiusi</h2>
+    <p>Il termine per ordinare questa settimana<br>era <strong>venerdì alle ore 14:00</strong>.<br><br>
+    La prossima lista sarà disponibile<br>da giovedì prossimo.</p>
+    <div class="next-open" id="next-open-label"></div>
+  </div>
+
+  <!-- ERRORE RETE -->
+  <div id="st-neterr" class="errstate" style="display:none;">
+    <p id="neterr-msg">Impossibile caricare i prodotti.</p>
+    <button class="retybtn" onclick="init()">Riprova</button>
+  </div>
+
+  <!-- FORM -->
+  <div id="st-form" style="display:none;">
+    <div style="height:10px;"></div>
+    <div class="card">
+      <div class="field">
+        <label class="field-lbl" for="cname">Il tuo nome *</label>
+        <input type="text" id="cname" placeholder="Nome e cognome" autocomplete="name" oninput="refreshSum()"/>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label class="field-lbl" for="ctel">Telefono * <span style="font-size:10px;font-weight:normal;text-transform:none;color:var(--tm);">(per identificarti)</span></label>
+        <input type="tel" id="ctel" placeholder="es. 333 1234567" autocomplete="tel" oninput="refreshSum()"/>
+      </div>
+    </div>
+    <div class="sec-lbl" id="sec-week">Prodotti disponibili</div>
+    <div id="plist"></div>
+    <div class="card">
+      <div class="field" style="margin-bottom:0;">
+        <label class="field-lbl" for="cnotes">Note (facoltative)</label>
+        <textarea id="cnotes" placeholder="Es. consegna pomeriggio, allergie, preferenze..."></textarea>
+      </div>
+    </div>
+    <div id="sumbox" class="sumbox" style="display:none;margin-top:4px;">
+      <div class="sumtitle">Il tuo ordine</div>
+      <div id="sumlines" class="sumline"></div>
+      <div id="sumtotal" class="sumtotal"></div>
+    </div>
+    <div id="errbox" class="errbox" style="display:none;"></div>
+    <button class="sbtn" id="sbtn" onclick="goConfirm()" disabled>Rivedi e conferma →</button>
+    <p class="footnote">I tuoi dati vengono usati solo per gestire l'ordine settimanale.</p>
+  </div>
+
+  <!-- PAGINA CONFERMA -->
+  <div id="st-confirm" style="display:none;">
+    <div style="height:10px;"></div>
+    <div class="confirm-hdr">
+      <h2>Controlla il tuo ordine</h2>
+      <p id="confirm-meta"></p>
+    </div>
+    <div class="card">
+      <div id="confirm-rows"></div>
+      <div id="confirm-total" class="confirm-total"></div>
+    </div>
+    <div class="warning-box">
+      <strong>⚠️ Leggi prima di confermare</strong>
+      <p>Una volta confermato, l'ordine è <strong>definitivo e non modificabile online</strong>.<br><br>
+      Non sarà possibile cancellarlo o cambiarlo tramite questo sito.<br><br>
+      Per qualsiasi modifica dopo la conferma contatta direttamente <strong>Valeria</strong> per telefono.</p>
+    </div>
+    <div id="confirm-err" class="errbox" style="display:none;"></div>
+    <button class="confirm-btn" id="confirm-btn" onclick="doSubmit()">✓ Confermo l'ordine</button>
+    <button class="back-btn" onclick="goBack()">← Torna indietro e modifica</button>
+  </div>
+
+  <!-- SUCCESSO -->
+  <div id="st-success" class="success" style="display:none;">
+    <div class="sico">✓</div>
+    <h2>Ordine confermato!</h2>
+    <p>Grazie <strong id="sname"></strong>!<br>
+    Il tuo ordine è stato registrato.<br>
+    Verrai contattato/a da Valeria per il ritiro.</p>
+    <div class="final-warn">
+      L'ordine è definitivo.<br>
+      Per modifiche o cancellazioni contatta Valeria direttamente per telefono.
+    </div>
+  </div>
+
+</div>
+<footer>🌿 Verdura Felice Biodinamica · Azienda Agricola Valeria Mascarello</footer>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbwlCtXBhmXF253HXqFdpbJSRMWh8IKgmoNVkEAPiRQ6HOQSU7JKvbaCAk5QIqN5Q3Nx/exec";
+const SECRET_TOKEN = "vff-giovedi-2025";
+// ─────────────────────────────────────────────────────────────────────────────
+
+let PRODUCTS = [], settimana = "";
+const qty = {};
+
+function getWeekRange() {
+  const now = new Date();
+  const day = now.getDay();
+  // Giovedì più recente (0=dom → offset 4, 1=lun → 3, ... 4=gio → 0, 5=ven → -1→6 etc.)
+  const daysBack = (day + 3) % 7; // giorni trascorsi da giovedì
+  const thu = new Date(now);
+  thu.setDate(now.getDate() - daysBack);
+  thu.setHours(0,0,0,0);
+  const wed = new Date(thu);
+  wed.setDate(thu.getDate() + 6);
+  const f = x => x.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  return `${cap(f(thu))} – ${cap(f(wed))}`;
+}
+
+function isOpen() {
+  const now = new Date();
+  const day = now.getDay(), h = now.getHours();
+  if (day === 6 || day === 0) return false;       // sab/dom
+  if (day === 5 && h >= 14)   return false;       // ven dopo le 14
+  return true;
+}
+
+function getNextThursday() {
+  const now = new Date();
+  const daysToThu = (4 - now.getDay() + 7) % 7 || 7;
+  const thu = new Date(now);
+  thu.setDate(now.getDate() + daysToThu);
+  return thu.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});
+}
+
+async function init() {
+  showState("loading");
+  if (!isOpen()) {
+    const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+    document.getElementById("next-open-label").textContent =
+      "Prossima apertura: " + cap(getNextThursday());
+    showState("chiuso");
+    return;
+  }
+  try {
+    const res  = await fetch(SCRIPT_URL+"?action=config");
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error||"Errore");
+    const cfg  = data.config||{};
+    PRODUCTS   = cfg.prodotti||[];
+    settimana  = cfg.settimana||getWeekRange();
+    document.getElementById("wpill").textContent    = settimana;
+    document.getElementById("sec-week").textContent = "Prodotti disponibili — "+settimana;
+    if (!PRODUCTS.length) {
+      document.getElementById("neterr-msg").textContent =
+        "Nessun prodotto disponibile al momento. Riprova più tardi.";
+      showState("neterr"); return;
+    }
+    PRODUCTS.forEach(p => qty[p.id]=0);
+    renderProducts();
+    showState("form");
+  } catch(e) {
+    document.getElementById("neterr-msg").textContent =
+      "Impossibile caricare i prodotti. Controlla la connessione e riprova.";
+    showState("neterr");
+  }
+}
+
+function renderProducts() {
+  document.getElementById("plist").innerHTML = PRODUCTS.map(p => {
+    const q = qty[p.id]||0;
+    const noteHtml = p.note?`<span style="font-size:11px;color:var(--tm);margin-left:5px;">(${p.note})</span>`:"";
+    return `<div class="pi${q>0?" on":""}" id="pi-${p.id}">
+      <div class="pinfo">
+        <div class="pname">${esc(p.n)}${noteHtml}</div>
+        <div class="pprice">€${Number(p.p).toFixed(2)} / ${p.u}</div>
+      </div>
+      <div class="qcol"><div class="qrow">
+        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',-${p.step||0.5})">−</button>
+        <div><div class="qval" id="qv-${p.id}">${q}</div><div class="qunit">${p.u}</div></div>
+        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',${p.step||0.5})">+</button>
+      </div></div>
+    </div>`;
+  }).join("");
+}
+
+function chQty(id, delta) {
+  qty[id] = Math.max(0, Math.round(((qty[id]||0)+delta)*10)/10);
+  document.getElementById("qv-"+id).textContent = qty[id];
+  document.getElementById("pi-"+id).classList.toggle("on", qty[id]>0);
+  refreshSum();
+}
+
+function refreshSum() {
+  const name = (document.getElementById("cname").value||"").trim();
+  const tel  = (document.getElementById("ctel").value||"").trim();
+  const lines=[], rows=[];
+  let total=0;
+  PRODUCTS.forEach(p => {
+    const q=qty[p.id]||0; if(!q) return;
+    const sub=Math.round(q*p.p*100)/100; total+=sub;
+    lines.push(`${esc(p.n)}: ${q} ${p.u} × €${Number(p.p).toFixed(2)} = <b>€${sub.toFixed(2)}</b>`);
+    rows.push(`${p.n} | ${q} ${p.u} | €${Number(p.p).toFixed(2)} | €${sub.toFixed(2)}`);
+  });
+  const hasItems=lines.length>0;
+  document.getElementById("sumbox").style.display=hasItems?"block":"none";
+  if(hasItems){
+    document.getElementById("sumlines").innerHTML=lines.join("<br>");
+    document.getElementById("sumtotal").textContent="Totale stimato: €"+total.toFixed(2);
+  }
+  document.getElementById("sbtn").disabled=!(name&&tel&&hasItems);
+  window._rows=rows; window._total=total;
+}
+
+function goConfirm() {
+  const name=(document.getElementById("cname").value||"").trim();
+  const tel =(document.getElementById("ctel").value||"").trim();
+  let ok=true;
+  ["cname","ctel"].forEach(id=>{
+    const v=(document.getElementById(id).value||"").trim();
+    document.getElementById(id).classList.toggle("err",!v);
+    if(!v) ok=false;
+  });
+  if(!ok){
+    const eb=document.getElementById("errbox");
+    eb.textContent="Inserisci nome e telefono per continuare.";
+    eb.style.display="block"; return;
+  }
+  document.getElementById("errbox").style.display="none";
+
+  // Popola pagina conferma
+  document.getElementById("confirm-meta").textContent = name+" · "+tel+" · "+settimana;
+  const items=PRODUCTS.filter(p=>(qty[p.id]||0)>0);
+  document.getElementById("confirm-rows").innerHTML=items.map(p=>{
+    const q=qty[p.id], sub=Math.round(q*p.p*100)/100;
+    return `<div class="confirm-row">
+      <div><div class="pn">${esc(p.n)}</div><div class="ps">${q} ${p.u} × €${Number(p.p).toFixed(2)}</div></div>
+      <div class="pt">€${sub.toFixed(2)}</div>
+    </div>`;
+  }).join("");
+  document.getElementById("confirm-total").textContent="Totale da pagare: €"+(window._total||0).toFixed(2);
+  showState("confirm");
+  window.scrollTo(0,0);
+}
+
+function goBack(){
+  document.getElementById("confirm-err").style.display="none";
+  showState("form"); window.scrollTo(0,0);
+}
+
+async function doSubmit(){
+  const name =(document.getElementById("cname").value||"").trim();
+  const tel  =(document.getElementById("ctel").value||"").trim();
+  const notes=(document.getElementById("cnotes").value||"").trim();
+  const btn=document.getElementById("confirm-btn");
+  btn.disabled=true; btn.textContent="Invio in corso...";
+  document.getElementById("confirm-err").style.display="none";
+  try {
+    await fetch(SCRIPT_URL,{
+      method:"POST",
+      body:JSON.stringify({
+        token:SECRET_TOKEN, cliente:name, telefono:tel,
+        prodotti:(window._rows||[]).join("\n"),
+        totale:(window._total||0).toFixed(2),
+        note:notes, settimana
+      })
+    });
+    document.getElementById("sname").textContent=name;
+    showState("success"); window.scrollTo(0,0);
+  } catch(e){
+    const eb=document.getElementById("confirm-err");
+    eb.textContent="Errore durante l'invio. Riprova o contatta direttamente Valeria.";
+    eb.style.display="block";
+    btn.disabled=false; btn.textContent="✓ Confermo l'ordine";
+  }
+}
+
+function showState(s){
+  ["loading","chiuso","neterr","form","confirm","success"].forEach(id=>
+    document.getElementById("st-"+id).style.display=id===s?"block":"none");
+}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+init();
+</script>
+</body>
+</html>
