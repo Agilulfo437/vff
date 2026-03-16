@@ -208,14 +208,6 @@ function getWeekRange() {
   return `${cap(f(thu))} – ${cap(f(wed))}`;
 }
 
-function isOpen() {
-  const now = new Date();
-  const day = now.getDay(), h = now.getHours();
-  if (day === 6 || day === 0) return false;       // sab/dom
-  if (day === 5 && h >= 14)   return false;       // ven dopo le 14
-  return true;
-}
-
 function getNextThursday() {
   const now = new Date();
   const daysToThu = (4 - now.getDay() + 7) % 7 || 7;
@@ -226,18 +218,35 @@ function getNextThursday() {
 
 async function init() {
   showState("loading");
-  if (!isOpen()) {
+
+  // Chiusura automatica venerdì ore 14 — sempre attiva come sicurezza
+  const now = new Date();
+  const day = now.getDay(), h = now.getHours();
+  const autoClose = (day === 6 || day === 0) || (day === 5 && h >= 14);
+
+  if (autoClose) {
     const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
     document.getElementById("next-open-label").textContent =
       "Prossima apertura: " + cap(getNextThursday());
     showState("chiuso");
     return;
   }
+
   try {
     const res  = await fetch(SCRIPT_URL+"?action=config");
     const data = await res.json();
     if (!data.ok) throw new Error(data.error||"Errore");
     const cfg  = data.config||{};
+
+    // Controlla campo "aperto" — Valeria controlla apertura/chiusura pubblicando
+    if (cfg.aperto === "false") {
+      const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+      document.getElementById("next-open-label").textContent =
+        "Prossima apertura: " + cap(getNextThursday());
+      showState("chiuso");
+      return;
+    }
+
     PRODUCTS   = cfg.prodotti||[];
     settimana  = cfg.settimana||getWeekRange();
     document.getElementById("wpill").textContent    = settimana;
