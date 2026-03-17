@@ -394,7 +394,7 @@ async function saveProds(){
 
 function updateWA(){
   const week=getCurrentWeek();
-  const link=cfg.link||LINK_ORDINE;
+  const link=LINK_ORDINE;
   const lines=prods.filter(p=>p.n.trim())
     .map(p=>`• ${p.n}  €${Number(p.p).toFixed(2)}/${p.u}`).join("\n");
   document.getElementById("watxt").textContent=
