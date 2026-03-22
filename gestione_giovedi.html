@@ -166,6 +166,9 @@ input:focus,select:focus{border-color:var(--g);}
     <p style="font-size:11px;color:var(--tm);text-align:center;margin-top:8px;">
       I clienti vedranno automaticamente questi prodotti nel form ordine
     </p>
+    <div id="chiudi-box" style="display:none;margin-top:10px;">
+      <button class="btn btn-red btn-full" onclick="chiudiOrdini()">🔒 Chiudi ordini</button>
+    </div>
   </div>
   <div class="wa">
     <div class="walbl">📱 Messaggio WhatsApp — copia e invia ogni giovedì</div>
@@ -290,26 +293,65 @@ function init(){
     document.getElementById("login-screen").style.display="none";
     document.getElementById("app").style.display="block";
   }
-  try{ cfg=JSON.parse(localStorage.getItem("vff_cfg")||"{}"); }catch(e){cfg={};}
-  if(!cfg.url) cfg={url:SCRIPT_URL,shop:"Verdura e Frutta Felice",link:LINK_ORDINE};
+  cfg = {url:SCRIPT_URL, shop:"Verdura e Frutta Felice", link:LINK_ORDINE};
 
-  try{
-    const s=localStorage.getItem("vff_prods");
-    prods=s?JSON.parse(s):defaultProds();
-  }catch(e){prods=defaultProds();}
+  const today = new Date().toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"});
 
+  // Carica prodotti, settimana e stato form da Sheets
+  fetch(cfg.url+"?action=config")
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.ok && data.config){
+        const c = data.config;
+        prods = (c.prodotti && c.prodotti.length) ? c.prodotti : defaultProds();
+        const week = c.settimana || getNextThursdayRange();
+        document.getElementById("week-input").value = week;
+        document.getElementById("hw").textContent   = week;
+        document.getElementById("rpill").textContent = "Settimana "+week;
+        document.getElementById("print-meta").textContent = week+" · Stampato il "+today;
+        mostraChiudiBox(String(c.aperto) === "true");
+      } else {
+        caricaDefault(today);
+      }
+    })
+    .catch(()=>caricaDefault(today))
+    .finally(()=>{ renderProds(); updateWA(); });
+}
+
+function caricaDefault(today){
+  try{ const s=localStorage.getItem("vff_prods"); prods=s?JSON.parse(s):defaultProds(); }
+  catch(e){ prods=defaultProds(); }
   const week = getNextThursdayRange();
   document.getElementById("week-input").value = week;
   document.getElementById("hw").textContent   = week;
   document.getElementById("rpill").textContent = "Settimana "+week;
+  document.getElementById("print-meta").textContent = week+" · Stampato il "+(today||"");
+  mostraChiudiBox(false);
+}
 
-  // Intestazione stampa
-  const today = new Date().toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"});
-  document.getElementById("print-meta").textContent =
-    week+" · Stampato il "+today;
+// Mostra il pulsante "Chiudi ordini" solo se il form è aperto
+function mostraChiudiBox(aperto){
+  document.getElementById("chiudi-box").style.display = aperto ? "block" : "none";
+}
 
-  renderProds();
-  updateWA();
+async function chiudiOrdini(){
+  const btn = document.querySelector("#chiudi-box button");
+  btn.disabled = true;
+  try{
+    const res  = await fetch(cfg.url,{method:"POST",body:JSON.stringify({
+      action:"toggleAperto", token:SECRET_TOKEN, aperto: false
+    })});
+    const data = await res.json();
+    if(data.ok){
+      mostraChiudiBox(false);
+      showMsg("pmsg","ok","✓ Ordini chiusi — nessun nuovo ordine in entrata.");
+    } else {
+      showMsg("pmsg","err","Errore: "+(data.error||""));
+    }
+  }catch(e){
+    showMsg("pmsg","err","Errore di rete: "+e.message);
+  }
+  btn.disabled = false;
 }
 
 function defaultProds(){
