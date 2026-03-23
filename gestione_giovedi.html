@@ -675,18 +675,28 @@ function printMatrice(){
 
   function escP(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
-  function buildPage(pChunk,rChunk,pageNum,colLabel,rowLabel){
-    // Totali di colonna per questo chunk
+  // Calcola il totale complessivo di ogni cliente su TUTTI i prodotti (usato sul foglio 1)
+  const allTotals={};
+  list.forEach(o=>{
+    allTotals[o["Cliente"]||""]=(parseFloat(o["Totale \u20ac"])||0);
+  });
+
+  function buildPage(pChunk,rChunk,pageNum,colLabel,rowLabel,isFirstCol){
+    // isFirstCol: true = primo foglio orizzontale → mostra Tel + Totale cliente
     const totCol={};pChunk.forEach(p=>totCol[p.nome]={qty:0,sub:0});
 
-    let thead="<thead><tr>"
-      +"<th class=\"th-cliente\">Cliente</th>"
-      +"<th class=\"th-tel\">Telefono</th>";
-    if(hasNotes) thead+="<th class=\"th-note\">Note</th>";
+    // HEADER
+    let thead="<thead><tr><th class=\"th-cliente\">Cliente</th>";
+    if(isFirstCol){
+      thead+="<th class=\"th-tel\">Telefono</th>";
+      if(hasNotes) thead+="<th class=\"th-note\">Note</th>";
+      thead+="<th class=\"th-tot\">Totale</th>";
+    }
     pChunk.forEach(p=>thead+="<th class=\"th-prod\">"+escP(p.nome)
       +"<br><span style=\"font-weight:400;font-size:6.5px;color:#2d6b47;display:block;margin-top:2px;\">"+escP(p.unit)+"</span></th>");
-    thead+="<th class=\"th-tot\">Totale</th></tr></thead>";
+    thead+="</tr></thead>";
 
+    // BODY
     let tbody="<tbody>";
     rChunk.forEach(o=>{
       const map={};
@@ -698,12 +708,14 @@ function printMatrice(){
         const sub=parseFloat((p[3]||"").replace("\u20ac",""))||0;
         map[p[0]]={qty:parseFloat(qm[1])||0,unit:qm[2],sub};
       });
-      const tel=escP(o["Telefono"]||o["Tel"]||o["telefono"]||"");
-      // Totale riga solo per i prodotti di questo chunk
-      let rowTot=0;
-      pChunk.forEach(p=>{if(map[p.nome]) rowTot+=map[p.nome].sub;});
-      tbody+="<tr><td class=\"td-cliente\">"+escP(o["Cliente"]||"")+"</td><td class=\"td-tel\">"+tel+"</td>";
-      if(hasNotes) tbody+="<td class=\"td-note\">"+escP(o["Note"]||"")+"</td>";
+      tbody+="<tr><td class=\"td-cliente\">"+escP(o["Cliente"]||"")+"</td>";
+      if(isFirstCol){
+        const tel=escP(o["Telefono"]||o["Tel"]||o["telefono"]||"");
+        tbody+="<td class=\"td-tel\">"+tel+"</td>";
+        if(hasNotes) tbody+="<td class=\"td-note\">"+escP(o["Note"]||"")+"</td>";
+        const fullTot=allTotals[o["Cliente"]||""]||0;
+        tbody+="<td class=\"tot\">&euro;"+fullTot.toFixed(2)+"</td>";
+      }
       pChunk.forEach(p=>{
         if(map[p.nome]){
           const d=map[p.nome];
@@ -714,18 +726,23 @@ function printMatrice(){
           tbody+="<td class=\"dash\">&ndash;</td>";
         }
       });
-      tbody+="<td class=\"tot\">&euro;"+rowTot.toFixed(2)+"</td></tr>";
+      tbody+="</tr>";
     });
     tbody+="</tbody>";
 
-    const chunkTotal=Object.values(totCol).reduce((s,c)=>s+c.sub,0);
-    let tfoot="<tfoot><tr><td><b>Totali</b></td><td></td>";
-    if(hasNotes) tfoot+="<td></td>";
+    // FOOTER
+    const grandTotal=rChunk.reduce((s,o)=>s+(allTotals[o["Cliente"]||""]||0),0);
+    let tfoot="<tfoot><tr><td><b>Totali</b></td>";
+    if(isFirstCol){
+      tfoot+="<td></td>";// tel
+      if(hasNotes) tfoot+="<td></td>";
+      tfoot+="<td class=\"tot\">&euro;"+grandTotal.toFixed(2)+"</td>";
+    }
     pChunk.forEach(p=>{
       const c=totCol[p.nome];
       tfoot+="<td class=\"td-qty\">"+Math.round(c.qty*10)/10+"<span class=\"msub\">&euro;"+c.sub.toFixed(2)+"</span></td>";
     });
-    tfoot+="<td class=\"tot\">&euro;"+chunkTotal.toFixed(2)+"</td></tr></tfoot>";
+    tfoot+="</tr></tfoot>";
 
     // Etichetta di paginazione
     let pageInfo="";
@@ -748,11 +765,12 @@ function printMatrice(){
   let pages="";
   let pageNum=0;
   prodChunks.forEach((pChunk,ci)=>{
+    const isFirstCol=(ci===0);
     const colLabel=(ci+1)+"/"+prodChunks.length;
     rowChunks.forEach((rChunk,ri)=>{
       pageNum++;
       const rowLabel=(ri+1)+"/"+rowChunks.length;
-      pages+=buildPage(pChunk,rChunk,pageNum,colLabel,rowLabel);
+      pages+=buildPage(pChunk,rChunk,pageNum,colLabel,rowLabel,isFirstCol);
     });
   });
 
