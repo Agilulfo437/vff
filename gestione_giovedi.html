@@ -657,16 +657,21 @@ function printMatrice(){
   const ROW_H=20;  // altezza stimata riga dati
   const HEAD_H=80; // altezza intestazione (h2+meta+riga th)
 
-  // Colonne fisse sempre presenti in ogni foglio
-  const fixedW=W_CLI+W_TEL+W_NOTE+W_TOT;
-  // Prodotti per foglio (quanti entrano in A4W - fixedW)
-  const prodsPerPage=Math.max(1,Math.floor((A4W-fixedW)/W_PROD));
+  // Foglio 1: Nome + Tel + Note? + Totale + prodotti
+  const fixedW1=W_CLI+W_TEL+W_NOTE+W_TOT;
+  const prodsPage1=Math.max(1,Math.floor((A4W-fixedW1)/W_PROD));
+  // Fogli 2+: solo Nome + prodotti (no Tel, no Totale)
+  const prodsPageN=Math.max(1,Math.floor((A4W-W_CLI)/W_PROD));
   // Righe per foglio
   const rowsPerPage=Math.max(1,Math.floor((A4H-HEAD_H)/ROW_H));
 
-  // Suddividi prodotti in gruppi (colonne)
+  // Suddividi prodotti rispettando le dimensioni diverse del foglio 1 e dei fogli successivi
   const prodChunks=[];
-  for(let i=0;i<prods.length;i+=prodsPerPage) prodChunks.push(prods.slice(i,i+prodsPerPage));
+  if(prods.length>0){
+    prodChunks.push(prods.slice(0,prodsPage1));
+    for(let i=prodsPage1;i<prods.length;i+=prodsPageN)
+      prodChunks.push(prods.slice(i,i+prodsPageN));
+  }
   // Suddividi clienti in gruppi (righe)
   const rowChunks=[];
   for(let i=0;i<list.length;i+=rowsPerPage) rowChunks.push(list.slice(i,i+rowsPerPage));
