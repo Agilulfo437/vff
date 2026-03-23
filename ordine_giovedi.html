@@ -10,6 +10,7 @@
   --g:#2d6b47;--gd:#1e4d32;--gl:#eaf4ee;--gm:#74b893;
   --sand:#f6f3ee;--t:#222;--tm:#7a736a;--b:#ddd8ce;
   --red:#b03030;--redl:#fdf1f0;--r:13px;--rs:8px;
+  --fetch-timeout:20000;
 }
 body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--sand);color:var(--t);min-height:100vh;}
 header{background:var(--gd);padding:20px 20px 16px;text-align:center;}
@@ -83,6 +84,9 @@ textarea{height:68px;resize:none;font-size:14px;}
 .errstate{text-align:center;padding:60px 20px;}
 .retybtn{padding:11px 24px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:14px;cursor:pointer;font-family:inherit;margin-top:12px;}
 footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
+/* Instagram link — reusable */
+.ig-link{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:10px 18px;background:#fff;border:1.5px solid #f0c0d0;border-radius:10px;text-decoration:none;}
+.ig-link span{font-size:14px;font-weight:500;color:#c2185b;letter-spacing:0.01em;}
 </style>
 </head>
 <body>
@@ -92,6 +96,16 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
   <p id="header-orario">Consegna <strong style="color:#b8ddc0;">sabato al mercato di Imperia Oneglia</strong> · Lista disponibile da giovedì · Ordini entro <strong style="color:#b8ddc0;">venerdì ore 14:00</strong></p>
   <div class="wpill" id="wpill" style="display:none;"></div>
 </header>
+
+<!-- Instagram SVG defined once, reused via class -->
+<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="ig-icon" viewBox="0 0 22 22">
+    <circle cx="11" cy="11" r="11" fill="#fce4ec"/>
+    <rect x="6" y="6" width="10" height="10" rx="3" stroke="#c2185b" stroke-width="1.5" fill="none"/>
+    <circle cx="11" cy="11" r="2.5" stroke="#c2185b" stroke-width="1.5" fill="none"/>
+    <circle cx="14.2" cy="7.8" r="0.8" fill="#c2185b"/>
+  </symbol>
+</svg>
 
 <div class="wrap">
 
@@ -108,14 +122,9 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
     La nuova lista per le consegne del sabato sarà disponibile da:</p>
     <div class="next-open" id="next-open-label"></div>
     <p style="margin-top:18px;font-size:13px;">Seguici su Instagram per aggiornamenti sulla lista prodotti!</p>
-    <a href="https://www.instagram.com/mascarellovaleria" target="_blank" style="display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:10px 18px;background:#fff;border:1.5px solid #f0c0d0;border-radius:10px;text-decoration:none;">
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="11" cy="11" r="11" fill="#fce4ec"/>
-        <rect x="6" y="6" width="10" height="10" rx="3" stroke="#c2185b" stroke-width="1.5" fill="none"/>
-        <circle cx="11" cy="11" r="2.5" stroke="#c2185b" stroke-width="1.5" fill="none"/>
-        <circle cx="14.2" cy="7.8" r="0.8" fill="#c2185b"/>
-      </svg>
-      <span style="font-size:14px;font-weight:500;color:#c2185b;letter-spacing:0.01em;">@mascarellovaleria</span>
+    <a href="https://www.instagram.com/mascarellovaleria" target="_blank" class="ig-link">
+      <svg width="22" height="22"><use href="#ig-icon"/></svg>
+      <span>@mascarellovaleria</span>
     </a>
   </div>
 
@@ -187,14 +196,9 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
       L'ordine è definitivo.<br>
       Per modifiche o cancellazioni contatta Valeria direttamente per telefono.
     </div>
-    <a href="https://www.instagram.com/mascarellovaleria" target="_blank" style="display:inline-flex;align-items:center;gap:8px;margin-top:18px;padding:10px 18px;background:#fff;border:1.5px solid #f0c0d0;border-radius:10px;text-decoration:none;">
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="11" cy="11" r="11" fill="#fce4ec"/>
-        <rect x="6" y="6" width="10" height="10" rx="3" stroke="#c2185b" stroke-width="1.5" fill="none"/>
-        <circle cx="11" cy="11" r="2.5" stroke="#c2185b" stroke-width="1.5" fill="none"/>
-        <circle cx="14.2" cy="7.8" r="0.8" fill="#c2185b"/>
-      </svg>
-      <span style="font-size:14px;font-weight:500;color:#c2185b;letter-spacing:0.01em;">@mascarellovaleria</span>
+    <a href="https://www.instagram.com/mascarellovaleria" target="_blank" class="ig-link" style="margin-top:18px;">
+      <svg width="22" height="22"><use href="#ig-icon"/></svg>
+      <span>@mascarellovaleria</span>
     </a>
   </div>
 
@@ -205,10 +209,33 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbyIm7gCfJCC98WmsqnVx-B1EgABWQdbywdcvzeGRY2eckjkyNrluf3BBEyr_OcJkyYl/exec";
 const SECRET_TOKEN = "vff-giovedi-2025";
+const FETCH_TIMEOUT_MS = 20000;  // [FIX 4] timeout per fetch
+const PHONE_MIN_DIGITS = 9;      // [FIX 13] magic numbers as constants
+const PHONE_MAX_DIGITS = 10;
+const DEADLINE_HOUR    = 14;
+const DEADLINE_MINUTE  = 15;
 // ─────────────────────────────────────────────────────────────────────────────
 
 let PRODUCTS = [], settimana = "";
 const qty = {};
+
+// ─── UTILITIES ───────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** [FIX 4] fetch with timeout — rejects if server doesn't respond in time */
+function fetchWithTimeout(url, options, ms) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ms || FETCH_TIMEOUT_MS);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timeout));
+}
+
+function formatDateIT(date) {
+  const s = date.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 function getWeekRange() {
   const now = new Date();
@@ -216,10 +243,8 @@ function getWeekRange() {
   const daysBack = (day + 3) % 7;
   const thu = new Date(now);
   thu.setDate(now.getDate() - daysBack);
-  thu.setHours(0,0,0,0);
-  const f = x => x.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});
-  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-  return cap(f(thu));
+  thu.setHours(0, 0, 0, 0);
+  return formatDateIT(thu);
 }
 
 function getNextThursday() {
@@ -227,18 +252,36 @@ function getNextThursday() {
   const daysToThu = (4 - now.getDay() + 7) % 7 || 7;
   const thu = new Date(now);
   thu.setDate(now.getDate() + daysToThu);
-  return thu.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});
+  return formatDateIT(thu);
 }
 
+function showState(s) {
+  ["loading", "chiuso", "neterr", "form", "confirm", "success"].forEach(id =>
+    document.getElementById("st-" + id).style.display = id === s ? "block" : "none"
+  );
+}
+
+// ─── AUTOCLOSE LOGIC ─────────────────────────────────────────────────────────
+/** [FIX 3] Restored autoClose — client-side time gate before checking server.
+ *  Form is open Wed–Fri 14:15. Outside that window, no API call needed. */
+function isOutsideOrderWindow() {
+  const now = new Date();
+  const day = now.getDay();  // 0=Sun, 1=Mon, ..., 6=Sat
+  const h = now.getHours(), m = now.getMinutes();
+  // Sat, Sun, Mon, Tue → always closed
+  if (day === 6 || day === 0 || day === 1 || day === 2) return true;
+  // Fri after 14:15 → closed
+  if (day === 5 && (h > DEADLINE_HOUR || (h === DEADLINE_HOUR && m >= DEADLINE_MINUTE))) return true;
+  // Wed, Thu, Fri before deadline → open (will still check server-side 'aperto')
+  return false;
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
 async function init() {
   showState("loading");
 
-  // Chiusura automatica: lun/mar/sab/dom sempre chiuso — mer/gio/ven aperto fino alle 14:15
-  const now = new Date();
-  const day = now.getDay(), h = now.getHours(), m = now.getMinutes();
-  const autoClose = false; // TEMPORANEO - ripristinare: (day === 6 || day === 0 || day === 1 || day === 2) || (day === 5 && (h > 14 || (h === 14 && m >= 15)))
-
-  if (autoClose) {
+  // [FIX 3] Client-side time gate
+  if (isOutsideOrderWindow()) {
     document.getElementById("next-open-label").textContent = getNextThursday();
     document.getElementById("header-orario").style.display = "none";
     showState("chiuso");
@@ -246,12 +289,13 @@ async function init() {
   }
 
   try {
-    const res  = await fetch(SCRIPT_URL+"?action=config");
+    // [FIX 4] fetch with timeout
+    const res  = await fetchWithTimeout(SCRIPT_URL + "?action=config");
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error||"Errore");
-    const cfg  = data.config||{};
+    if (!data.ok) throw new Error(data.error || "Errore");
+    const cfg  = data.config || {};
 
-    // Controlla campo "aperto" — Valeria controlla apertura/chiusura pubblicando
+    // Server-side gate: Valeria controls open/close via publishing
     if (cfg.aperto === "false") {
       document.getElementById("next-open-label").textContent = getNextThursday();
       document.getElementById("header-orario").style.display = "none";
@@ -259,149 +303,167 @@ async function init() {
       return;
     }
 
-    PRODUCTS   = cfg.prodotti||[];
-    settimana  = cfg.settimana||getWeekRange();
+    PRODUCTS   = cfg.prodotti || [];
+    settimana  = cfg.settimana || getWeekRange();
     const wpill = document.getElementById("wpill");
     wpill.textContent = settimana;
     wpill.style.display = "inline-block";
-    document.getElementById("sec-week").textContent = "Prodotti disponibili — "+settimana;
+    document.getElementById("sec-week").textContent = "Prodotti disponibili — " + settimana;
     if (!PRODUCTS.length) {
       document.getElementById("neterr-msg").textContent =
         "Nessun prodotto disponibile al momento. Riprova più tardi.";
-      showState("neterr"); return;
+      showState("neterr");
+      return;
     }
-    PRODUCTS.forEach(p => qty[p.id]=0);
+    PRODUCTS.forEach(p => qty[p.id] = 0);
     renderProducts();
     showState("form");
-  } catch(e) {
-    document.getElementById("neterr-msg").textContent =
-      "Impossibile caricare i prodotti. Controlla la connessione e riprova.";
+  } catch (e) {
+    const msg = e.name === "AbortError"
+      ? "Il server non risponde. Controlla la connessione e riprova."
+      : "Impossibile caricare i prodotti. Controlla la connessione e riprova.";
+    document.getElementById("neterr-msg").textContent = msg;
     showState("neterr");
   }
 }
 
+// ─── PRODUCT RENDERING ───────────────────────────────────────────────────────
 function renderProducts() {
   document.getElementById("plist").innerHTML = PRODUCTS.map(p => {
-    const q = qty[p.id]||0;
-    const noteHtml = p.note?`<span style="font-size:11px;color:var(--tm);margin-left:5px;">(${p.note})</span>`:"";
-    return `<div class="pi${q>0?" on":""}" id="pi-${p.id}">
+    const q = qty[p.id] || 0;
+    const noteHtml = p.note ? `<span style="font-size:11px;color:var(--tm);margin-left:5px;">(${esc(p.note)})</span>` : "";
+    return `<div class="pi${q > 0 ? " on" : ""}" id="pi-${p.id}">
       <div class="pinfo">
         <div class="pname">${esc(p.n)}${noteHtml}</div>
-        <div class="pprice">€${Number(p.p).toFixed(2)} / ${p.u}</div>
+        <div class="pprice">€${Number(p.p).toFixed(2)} / ${esc(p.u)}</div>
       </div>
       <div class="qcol"><div class="qrow">
-        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',-${p.step||0.5})">−</button>
-        <div><div class="qval" id="qv-${p.id}">${q}</div><div class="qunit">${p.u}</div></div>
-        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',${p.step||0.5})">+</button>
+        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',-${p.step || 0.5})">−</button>
+        <div><div class="qval" id="qv-${p.id}">${q}</div><div class="qunit">${esc(p.u)}</div></div>
+        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',${p.step || 0.5})">+</button>
       </div></div>
     </div>`;
   }).join("");
 }
 
+// ─── QUANTITY & SUMMARY ──────────────────────────────────────────────────────
 function chQty(id, delta) {
-  qty[id] = Math.max(0, Math.round(((qty[id]||0)+delta)*10)/10);
-  document.getElementById("qv-"+id).textContent = qty[id];
-  document.getElementById("pi-"+id).classList.toggle("on", qty[id]>0);
+  qty[id] = Math.max(0, Math.round(((qty[id] || 0) + delta) * 10) / 10);
+  document.getElementById("qv-" + id).textContent = qty[id];
+  document.getElementById("pi-" + id).classList.toggle("on", qty[id] > 0);
   refreshSum();
 }
 
 function refreshSum() {
-  const name = (document.getElementById("cname").value||"").trim();
-  const tel  = (document.getElementById("ctel").value||"").trim();
-  const lines=[], rows=[];
-  let total=0;
+  const name = (document.getElementById("cname").value || "").trim();
+  const tel  = (document.getElementById("ctel").value || "").trim();
+  const lines = [], rows = [];
+  let total = 0;
   PRODUCTS.forEach(p => {
-    const q=qty[p.id]||0; if(!q) return;
-    const sub=Math.round(q*p.p*100)/100; total+=sub;
-    lines.push(`${esc(p.n)}: ${q} ${p.u} × €${Number(p.p).toFixed(2)} = <b>€${sub.toFixed(2)}</b>`);
+    const q = qty[p.id] || 0;
+    if (!q) return;
+    const sub = Math.round(q * p.p * 100) / 100;
+    total += sub;
+    lines.push(`${esc(p.n)}: ${q} ${esc(p.u)} × €${Number(p.p).toFixed(2)} = <b>€${sub.toFixed(2)}</b>`);
     rows.push(`${p.n} | ${q} ${p.u} | €${Number(p.p).toFixed(2)} | €${sub.toFixed(2)}`);
   });
-  const hasItems=lines.length>0;
-  document.getElementById("sumbox").style.display=hasItems?"block":"none";
-  if(hasItems){
-    document.getElementById("sumlines").innerHTML=lines.join("<br>");
-    document.getElementById("sumtotal").textContent="Totale stimato: €"+total.toFixed(2);
+  const hasItems = lines.length > 0;
+  document.getElementById("sumbox").style.display = hasItems ? "block" : "none";
+  if (hasItems) {
+    document.getElementById("sumlines").innerHTML = lines.join("<br>");
+    document.getElementById("sumtotal").textContent = "Totale stimato: €" + total.toFixed(2);
   }
-  document.getElementById("sbtn").disabled=!(name&&tel&&hasItems);
-  window._rows=rows; window._total=total;
+  document.getElementById("sbtn").disabled = !(name && tel && hasItems);
+  window._rows = rows;
+  window._total = total;
 }
 
+// ─── CONFIRM PAGE ────────────────────────────────────────────────────────────
 function goConfirm() {
-  const name=(document.getElementById("cname").value||"").trim();
-  const tel =(document.getElementById("ctel").value||"").trim();
-  let ok=true;
+  const name = (document.getElementById("cname").value || "").trim();
+  const tel  = (document.getElementById("ctel").value || "").trim();
+  let ok = true;
 
-  // Valida nome
-  document.getElementById("cname").classList.toggle("err",!name);
-  if(!name) ok=false;
+  // Validate name
+  document.getElementById("cname").classList.toggle("err", !name);
+  if (!name) ok = false;
 
-  // Valida telefono: 9-10 cifre (mobile italiano)
-  const telClean = tel.replace(/[\s\-\+]/g,"");
-  const telOk = /^\d{9,10}$/.test(telClean);
-  document.getElementById("ctel").classList.toggle("err",!telOk);
-  if(!telOk) ok=false;
+  // [FIX 13] Validate phone using named constants
+  const telClean = tel.replace(/[\s\-\+]/g, "");
+  const telDigits = telClean.length;
+  const telOk = /^\d+$/.test(telClean) && telDigits >= PHONE_MIN_DIGITS && telDigits <= PHONE_MAX_DIGITS;
+  document.getElementById("ctel").classList.toggle("err", !telOk);
+  if (!telOk) ok = false;
 
-  if(!ok){
-    const eb=document.getElementById("errbox");
-    eb.textContent=!name
+  if (!ok) {
+    const eb = document.getElementById("errbox");
+    eb.textContent = !name
       ? "Inserisci il tuo nome per continuare."
-      : "Inserisci un numero di telefono valido (9-10 cifre).";
-    eb.style.display="block"; return;
+      : `Inserisci un numero di telefono valido (${PHONE_MIN_DIGITS}-${PHONE_MAX_DIGITS} cifre).`;
+    eb.style.display = "block";
+    return;
   }
-  document.getElementById("errbox").style.display="none";
+  document.getElementById("errbox").style.display = "none";
 
-  // Popola pagina conferma
-  document.getElementById("confirm-meta").textContent = name+" · "+tel+" · "+settimana;
-  const items=PRODUCTS.filter(p=>(qty[p.id]||0)>0);
-  document.getElementById("confirm-rows").innerHTML=items.map(p=>{
-    const q=qty[p.id], sub=Math.round(q*p.p*100)/100;
+  // Populate confirm page
+  document.getElementById("confirm-meta").textContent = name + " · " + tel + " · " + settimana;
+  const items = PRODUCTS.filter(p => (qty[p.id] || 0) > 0);
+  document.getElementById("confirm-rows").innerHTML = items.map(p => {
+    const q = qty[p.id], sub = Math.round(q * p.p * 100) / 100;
     return `<div class="confirm-row">
-      <div><div class="pn">${esc(p.n)}</div><div class="ps">${q} ${p.u} × €${Number(p.p).toFixed(2)}</div></div>
+      <div><div class="pn">${esc(p.n)}</div><div class="ps">${q} ${esc(p.u)} × €${Number(p.p).toFixed(2)}</div></div>
       <div class="pt">€${sub.toFixed(2)}</div>
     </div>`;
   }).join("");
-  document.getElementById("confirm-total").textContent="Totale da pagare: €"+(window._total||0).toFixed(2);
+  document.getElementById("confirm-total").textContent = "Totale da pagare: €" + (window._total || 0).toFixed(2);
   showState("confirm");
-  window.scrollTo(0,0);
+  window.scrollTo(0, 0);
 }
 
-function goBack(){
-  document.getElementById("confirm-err").style.display="none";
-  showState("form"); window.scrollTo(0,0);
+function goBack() {
+  document.getElementById("confirm-err").style.display = "none";
+  showState("form");
+  window.scrollTo(0, 0);
 }
 
-async function doSubmit(){
-  const name =(document.getElementById("cname").value||"").trim();
-  const tel  =(document.getElementById("ctel").value||"").trim();
-  const notes=(document.getElementById("cnotes").value||"").trim();
-  const btn=document.getElementById("confirm-btn");
-  btn.disabled=true; btn.textContent="Invio in corso...";
-  document.getElementById("confirm-err").style.display="none";
+// ─── SUBMIT ORDER ────────────────────────────────────────────────────────────
+async function doSubmit() {
+  const name  = (document.getElementById("cname").value || "").trim();
+  const tel   = (document.getElementById("ctel").value || "").trim();
+  const notes = (document.getElementById("cnotes").value || "").trim();
+  const btn   = document.getElementById("confirm-btn");
+  btn.disabled = true;
+  btn.textContent = "Invio in corso...";
+  document.getElementById("confirm-err").style.display = "none";
   try {
-    await fetch(SCRIPT_URL,{
-      method:"POST",
-      body:JSON.stringify({
-        token:SECRET_TOKEN, cliente:name, telefono:tel,
-        prodotti:(window._rows||[]).join("\n"),
-        totale:(window._total||0).toFixed(2),
-        note:notes, settimana
+    // [FIX 1] fetch with timeout + check response body
+    const res = await fetchWithTimeout(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        token: SECRET_TOKEN, cliente: name, telefono: tel,
+        prodotti: (window._rows || []).join("\n"),
+        totale: (window._total || 0).toFixed(2),
+        note: notes, settimana
       })
     });
-    document.getElementById("sname").textContent=name;
-    showState("success"); window.scrollTo(0,0);
-  } catch(e){
-    const eb=document.getElementById("confirm-err");
-    eb.textContent="Errore durante l'invio. Riprova o contatta direttamente Valeria.";
-    eb.style.display="block";
-    btn.disabled=false; btn.textContent="✓ Confermo l'ordine";
+    const data = await res.json();
+    // [FIX 1] Only show success if server confirms ok
+    if (!data.ok) {
+      throw new Error(data.error || "Il server ha rifiutato l'ordine.");
+    }
+    document.getElementById("sname").textContent = name;
+    showState("success");
+    window.scrollTo(0, 0);
+  } catch (e) {
+    const eb = document.getElementById("confirm-err");
+    eb.textContent = e.name === "AbortError"
+      ? "Il server non risponde. Riprova tra qualche istante."
+      : "Errore durante l'invio: " + (e.message || "Riprova o contatta direttamente Valeria.");
+    eb.style.display = "block";
+    btn.disabled = false;
+    btn.textContent = "✓ Confermo l'ordine";
   }
 }
-
-function showState(s){
-  ["loading","chiuso","neterr","form","confirm","success"].forEach(id=>
-    document.getElementById("st-"+id).style.display=id===s?"block":"none");
-}
-function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
 init();
 </script>
