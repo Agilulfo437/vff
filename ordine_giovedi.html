@@ -247,7 +247,7 @@ async function init() {
   // Chiusura automatica: lun/mar/sab/dom sempre chiuso — mer/gio/ven aperto fino alle 14:15
   const now = new Date();
   const day = now.getDay(), h = now.getHours(), m = now.getMinutes();
-  const autoClose = (day === 6 || day === 0 || day === 1 || day === 2) || (day === 5 && (h > 14 || (h === 14 && m >= 15)));
+  const autoClose = false;
 
   if (autoClose) {
     document.getElementById("next-open-label").textContent = getNextThursday();
