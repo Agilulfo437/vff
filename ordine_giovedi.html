@@ -84,6 +84,12 @@ textarea{height:68px;resize:none;font-size:14px;}
 .errstate{text-align:center;padding:60px 20px;}
 .retybtn{padding:11px 24px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:14px;cursor:pointer;font-family:inherit;margin-top:12px;}
 footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
+/* Welcome back banner */
+.wb-banner{background:var(--gl);border:1px solid #b8ddc0;border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.wb-banner .wb-text{font-size:13px;color:var(--gd);line-height:1.4;}
+.wb-banner .wb-name{font-weight:bold;}
+.wb-banner .wb-change{font-size:12px;color:var(--g);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:inherit;padding:0;white-space:nowrap;}
+.wb-banner .wb-change:active{opacity:.6;}
 /* Instagram link — reusable */
 .ig-link{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:10px 18px;background:#fff;border:1.5px solid #f0c0d0;border-radius:10px;text-decoration:none;}
 .ig-link span{font-size:14px;font-weight:500;color:#c2185b;letter-spacing:0.01em;}
@@ -137,6 +143,11 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
   <!-- FORM -->
   <div id="st-form" style="display:none;">
     <div style="height:10px;"></div>
+    <!-- Welcome back banner — shown when returning customer detected -->
+    <div id="wb-banner" class="wb-banner" style="display:none;">
+      <div class="wb-text">Bentornato, <span class="wb-name" id="wb-name"></span>!</div>
+      <button class="wb-change" onclick="clearSavedCustomer()">Non sei tu? Cambia</button>
+    </div>
     <div class="card">
       <div class="field">
         <label class="field-lbl" for="cname">Il tuo nome *</label>
@@ -162,7 +173,7 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
     </div>
     <div id="errbox" class="errbox" style="display:none;"></div>
     <button class="sbtn" id="sbtn" onclick="goConfirm()" disabled>Rivedi e conferma →</button>
-    <p class="footnote">I tuoi dati vengono usati solo per gestire l'ordine settimanale.</p>
+    <p class="footnote">I tuoi dati vengono usati solo per gestire l'ordine settimanale.<br>Nome e telefono vengono salvati sul tuo dispositivo per comodità.</p>
   </div>
 
   <!-- PAGINA CONFERMA -->
@@ -214,6 +225,8 @@ const PHONE_MIN_DIGITS = 9;      // [FIX 13] magic numbers as constants
 const PHONE_MAX_DIGITS = 10;
 const DEADLINE_HOUR    = 14;
 const DEADLINE_MINUTE  = 15;
+const LS_KEY_NAME      = "vff_cliente_nome";
+const LS_KEY_TEL       = "vff_cliente_tel";
 // ─────────────────────────────────────────────────────────────────────────────
 
 let PRODUCTS = [], settimana = "";
@@ -259,6 +272,43 @@ function showState(s) {
   ["loading", "chiuso", "neterr", "form", "confirm", "success"].forEach(id =>
     document.getElementById("st-" + id).style.display = id === s ? "block" : "none"
   );
+}
+
+// ─── CUSTOMER MEMORY (localStorage) ──────────────────────────────────────────
+/** Pre-fill name and phone from localStorage if available */
+function prefillCustomer() {
+  try {
+    const savedName = localStorage.getItem(LS_KEY_NAME) || "";
+    const savedTel  = localStorage.getItem(LS_KEY_TEL)  || "";
+    if (savedName && savedTel) {
+      document.getElementById("cname").value = savedName;
+      document.getElementById("ctel").value  = savedTel;
+      document.getElementById("wb-name").textContent = savedName;
+      document.getElementById("wb-banner").style.display = "flex";
+      refreshSum();
+    }
+  } catch (e) { /* localStorage unavailable — no problem, just skip */ }
+}
+
+/** Save name and phone after successful order */
+function saveCustomer(name, tel) {
+  try {
+    localStorage.setItem(LS_KEY_NAME, name);
+    localStorage.setItem(LS_KEY_TEL, tel);
+  } catch (e) { /* quota exceeded or private mode — silent fail */ }
+}
+
+/** Clear saved customer data — called from "Non sei tu? Cambia" */
+function clearSavedCustomer() {
+  try {
+    localStorage.removeItem(LS_KEY_NAME);
+    localStorage.removeItem(LS_KEY_TEL);
+  } catch (e) { /* silent */ }
+  document.getElementById("cname").value = "";
+  document.getElementById("ctel").value  = "";
+  document.getElementById("wb-banner").style.display = "none";
+  document.getElementById("cname").focus();
+  refreshSum();
 }
 
 // ─── AUTOCLOSE LOGIC ─────────────────────────────────────────────────────────
@@ -318,6 +368,7 @@ async function init() {
     PRODUCTS.forEach(p => qty[p.id] = 0);
     renderProducts();
     showState("form");
+    prefillCustomer();
   } catch (e) {
     const msg = e.name === "AbortError"
       ? "Il server non risponde. Controlla la connessione e riprova."
@@ -451,6 +502,7 @@ async function doSubmit() {
     if (!data.ok) {
       throw new Error(data.error || "Il server ha rifiutato l'ordine.");
     }
+    saveCustomer(name, tel);
     document.getElementById("sname").textContent = name;
     showState("success");
     window.scrollTo(0, 0);
