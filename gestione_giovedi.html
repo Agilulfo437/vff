@@ -630,36 +630,170 @@ function exportExcel(){
 }
 
 function printMatrice(){
-  const w=window.open("","_blank","width=1100,height=700");
+  // --- dati grezzi dalla tabella già costruita da buildMatrice ---
   const week=document.getElementById("rpill").textContent.replace("Settimana ","");
-  const tbl=document.getElementById("mtbl").outerHTML;
   const today=new Date().toLocaleDateString("it-IT");
+  const list=window._matriceList||[];
+  if(!list.length){alert("Nessun ordine da stampare.");return;}
+
+  // Recupera prodotti e flag note dalla tabella in-page
+  const prodSet={};
+  list.forEach(o=>{
+    (o["Prodotti (dettaglio)"]||"").split("\n").forEach(line=>{
+      const p=line.split("|").map(x=>x.trim());
+      if(p.length<4) return;
+      const qm=(p[1]||"").match(/^([\d.]+)\s*(.+)$/);
+      if(!qm) return;
+      if(!prodSet[p[0]]) prodSet[p[0]]={nome:p[0],unit:qm[2]};
+    });
+  });
+  const prods=Object.values(prodSet);
+  const hasNotes=list.some(o=>(o["Note"]||"").trim()!=="");
+
+  // --- dimensioni colonne (px a 96dpi) ---
+  const W_CLI=90, W_TEL=75, W_NOTE=hasNotes?70:0, W_TOT=44, W_PROD=52;
+  const A4W=740;   // larghezza utile A4 landscape a 96dpi
+  const A4H=507;   // altezza utile A4 landscape a 96dpi
+  const ROW_H=20;  // altezza stimata riga dati
+  const HEAD_H=80; // altezza intestazione (h2+meta+riga th)
+
+  // Colonne fisse sempre presenti in ogni foglio
+  const fixedW=W_CLI+W_TEL+W_NOTE+W_TOT;
+  // Prodotti per foglio (quanti entrano in A4W - fixedW)
+  const prodsPerPage=Math.max(1,Math.floor((A4W-fixedW)/W_PROD));
+  // Righe per foglio
+  const rowsPerPage=Math.max(1,Math.floor((A4H-HEAD_H)/ROW_H));
+
+  // Suddividi prodotti in gruppi (colonne)
+  const prodChunks=[];
+  for(let i=0;i<prods.length;i+=prodsPerPage) prodChunks.push(prods.slice(i,i+prodsPerPage));
+  // Suddividi clienti in gruppi (righe)
+  const rowChunks=[];
+  for(let i=0;i<list.length;i+=rowsPerPage) rowChunks.push(list.slice(i,i+rowsPerPage));
+
+  const totalPages=prodChunks.length*rowChunks.length;
+
+  function escP(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+  function buildPage(pChunk,rChunk,pageNum,colLabel,rowLabel){
+    // Totali di colonna per questo chunk
+    const totCol={};pChunk.forEach(p=>totCol[p.nome]={qty:0,sub:0});
+
+    let thead="<thead><tr>"
+      +"<th class=\"th-cliente\">Cliente</th>"
+      +"<th class=\"th-tel\">Telefono</th>";
+    if(hasNotes) thead+="<th class=\"th-note\">Note</th>";
+    pChunk.forEach(p=>thead+="<th class=\"th-prod\">"+escP(p.nome)
+      +"<br><span style=\"font-weight:400;font-size:6.5px;color:#2d6b47;display:block;margin-top:2px;\">"+escP(p.unit)+"</span></th>");
+    thead+="<th class=\"th-tot\">Totale</th></tr></thead>";
+
+    let tbody="<tbody>";
+    rChunk.forEach(o=>{
+      const map={};
+      (o["Prodotti (dettaglio)"]||"").split("\n").forEach(line=>{
+        const p=line.split("|").map(x=>x.trim());
+        if(p.length<4) return;
+        const qm=(p[1]||"").match(/^([\d.]+)\s*(.+)$/);
+        if(!qm) return;
+        const sub=parseFloat((p[3]||"").replace("\u20ac",""))||0;
+        map[p[0]]={qty:parseFloat(qm[1])||0,unit:qm[2],sub};
+      });
+      const tel=escP(o["Telefono"]||o["Tel"]||o["telefono"]||"");
+      // Totale riga solo per i prodotti di questo chunk
+      let rowTot=0;
+      pChunk.forEach(p=>{if(map[p.nome]) rowTot+=map[p.nome].sub;});
+      tbody+="<tr><td class=\"td-cliente\">"+escP(o["Cliente"]||"")+"</td><td class=\"td-tel\">"+tel+"</td>";
+      if(hasNotes) tbody+="<td class=\"td-note\">"+escP(o["Note"]||"")+"</td>";
+      pChunk.forEach(p=>{
+        if(map[p.nome]){
+          const d=map[p.nome];
+          totCol[p.nome].qty+=d.qty;
+          totCol[p.nome].sub+=d.sub;
+          tbody+="<td class=\"td-qty\">"+d.qty+"<span class=\"msub\">&euro;"+d.sub.toFixed(2)+"</span></td>";
+        } else {
+          tbody+="<td class=\"dash\">&ndash;</td>";
+        }
+      });
+      tbody+="<td class=\"tot\">&euro;"+rowTot.toFixed(2)+"</td></tr>";
+    });
+    tbody+="</tbody>";
+
+    const chunkTotal=Object.values(totCol).reduce((s,c)=>s+c.sub,0);
+    let tfoot="<tfoot><tr><td><b>Totali</b></td><td></td>";
+    if(hasNotes) tfoot+="<td></td>";
+    pChunk.forEach(p=>{
+      const c=totCol[p.nome];
+      tfoot+="<td class=\"td-qty\">"+Math.round(c.qty*10)/10+"<span class=\"msub\">&euro;"+c.sub.toFixed(2)+"</span></td>";
+    });
+    tfoot+="<td class=\"tot\">&euro;"+chunkTotal.toFixed(2)+"</td></tr></tfoot>";
+
+    // Etichetta di paginazione
+    let pageInfo="";
+    if(totalPages>1){
+      const parts=[];
+      if(prodChunks.length>1) parts.push("Prodotti "+colLabel);
+      if(rowChunks.length>1) parts.push("Clienti "+rowLabel);
+      pageInfo=" &mdash; "+parts.join(", ")+" (pag. "+pageNum+"/"+totalPages+")";
+    }
+
+    return "<div class=\"page\">"
+      +"<h2>Verdura Felice Biodinamica &mdash; Riepilogo matrice"+pageInfo+"</h2>"
+      +"<p class=\"meta\">Settimana: "+week+" &middot; Stampato il "+today+"</p>"
+      +"<table>"+thead+tbody+tfoot+"</table>"
+      +"</div>";
+  }
+
+  // Genera tutte le pagine: prima varia le righe (pagine sopra/sotto),
+  // poi varia le colonne (pagine affiancate) — così l'ordine di stampa è naturale
+  let pages="";
+  let pageNum=0;
+  prodChunks.forEach((pChunk,ci)=>{
+    const colLabel=(ci+1)+"/"+prodChunks.length;
+    rowChunks.forEach((rChunk,ri)=>{
+      pageNum++;
+      const rowLabel=(ri+1)+"/"+rowChunks.length;
+      pages+=buildPage(pChunk,rChunk,pageNum,colLabel,rowLabel);
+    });
+  });
+
+  const w=window.open("","_blank","width=1200,height=700");
   w.document.write("<!DOCTYPE html><html><head><meta charset=\"UTF-8\">"
     +"<title>Matrice "+week+"</title>"
     +"<style>"
-    +"@page{size:A4 landscape;margin:1cm 1.2cm;}"
+    +"@page{size:A4 landscape;margin:0.8cm 1cm;}"
     +"body{font-family:Arial,sans-serif;font-size:8px;margin:0;padding:0;}"
-    +"h2{font-family:Georgia,serif;font-size:13px;color:#1e4d32;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid #bbb;}"
-    +"p.meta{font-size:9px;color:#7a736a;margin:0 0 10px;}"
-    +"table{border-collapse:collapse;width:100%;}"
-    +"th{background:#fff;color:#1e4d32;font-weight:600;padding:5px 6px;text-align:left;border:1px solid #ddd;border-bottom:2px solid #2d6b47;white-space:nowrap;font-size:8px;}"
-    +"td{padding:5px 6px;border:1px solid #ddd;vertical-align:middle;color:#222;font-size:8px;line-height:1.4;text-align:left;}"
+    +".page{page-break-after:always;}"
+    +".page:last-child{page-break-after:auto;}"
+    +"h2{font-family:Georgia,serif;font-size:12px;color:#1e4d32;margin:0 0 3px;padding-bottom:4px;border-bottom:1px solid #bbb;}"
+    +"p.meta{font-size:8.5px;color:#7a736a;margin:0 0 6px;}"
+    +"table{border-collapse:collapse;width:100%;table-layout:fixed;}"
+    +"th{background:#e8f2ec;color:#1e4d32;font-weight:600;padding:4px 5px;text-align:center;border:1px solid #ccc;border-bottom:2px solid #2d6b47;font-size:7.5px;word-wrap:break-word;overflow-wrap:break-word;white-space:normal;vertical-align:bottom;line-height:1.3;}"
+    +"th.th-cliente{text-align:left;width:90px;}"
+    +"th.th-tel{text-align:left;width:75px;}"
+    +"th.th-note{text-align:left;width:70px;}"
+    +"th.th-prod{width:52px;}"
+    +"th.th-tot{width:44px;}"
+    +"td{padding:4px 5px;border:1px solid #ddd;vertical-align:middle;color:#222;font-size:8px;line-height:1.3;}"
+    +"td.td-cliente{font-weight:600;word-wrap:break-word;}"
+    +"td.td-tel{color:#555;font-size:7.5px;}"
+    +"td.td-note{font-size:7px;color:#555;word-wrap:break-word;overflow-wrap:break-word;white-space:normal;}"
+    +"td.td-qty{text-align:center;}"
     +"tr:nth-child(even) td{background:#f6f3ee;}"
     +"tr:nth-child(odd) td{background:#fff;}"
     +"td.dash{color:#ccc;text-align:center;}"
-    +"td.tot{font-weight:600;border-left:2px solid #aaa;}"
-    +"tfoot td{background:#f0ede8!important;font-weight:600;border-top:2px solid #888;}"
-    +"span.msub{display:block;color:#888;font-size:7px;margin-top:1px;}"
+    +"td.tot{font-weight:600;border-left:2px solid #aaa;text-align:right;}"
+    +"tfoot td{background:#dff0e8!important;font-weight:600;border-top:2px solid #2d6b47;}"
+    +"tfoot td.td-qty{text-align:center;}"
+    +"span.msub{display:block;color:#888;font-size:6.5px;margin-top:1px;text-align:center;}"
     +"</style></head><body>"
-    +"<h2>Verdura Felice Biodinamica &mdash; Riepilogo matrice</h2>"
-    +"<p class=\"meta\">Settimana: "+week+" &middot; Stampato il "+today+"</p>"
-    +tbl
+    +pages
     +"<scr"+"ipt>window.onload=function(){window.print();}<\/scr"+"ipt>"
     +"</body></html>");
   w.document.close();
 }
 
 function buildMatrice(list){
+  window._matriceList=list;
   if(!list.length){document.getElementById("mtbl").innerHTML="";return;}
   const prodSet={};
   list.forEach(o=>{
@@ -673,9 +807,13 @@ function buildMatrice(list){
   });
   const prods=Object.values(prodSet);
   if(!prods.length){document.getElementById("mtbl").innerHTML="";return;}
-  let thead="<thead><tr><th>Cliente</th><th>Note</th>";
-  prods.forEach(p=>thead+="<th>"+esc(p.nome)+"<br><span style=\"font-weight:400;font-size:7px;color:#888\">"+esc(p.unit)+"</span></th>");
-  thead+="<th>Totale</th></tr></thead>";
+  // Controlla se ci sono note non vuote — se nessuno ha note, ometti la colonna
+  const hasNotes=list.some(o=>(o["Note"]||"").trim()!=="");
+  let thead="<thead><tr><th class=\"th-cliente\">Cliente</th><th class=\"th-tel\">Telefono</th>";
+  if(hasNotes) thead+="<th class=\"th-note\">Note</th>";
+  // Titolo prodotto senza unità di misura nell'header
+  prods.forEach(p=>thead+="<th class=\"th-prod\">"+esc(p.nome)+"<br><span style=\"font-weight:400;font-size:6.5px;color:#2d6b47;display:block;margin-top:2px;\">"+esc(p.unit)+"</span></th>");
+  thead+="<th class=\"th-tot\">Totale</th></tr></thead>";
   const totCol={};prods.forEach(p=>totCol[p.nome]={qty:0,sub:0,unit:p.unit});
   let tbody="<tbody>";
   list.forEach(o=>{
@@ -688,13 +826,16 @@ function buildMatrice(list){
       const sub=parseFloat((p[3]||"").replace("\u20ac",""))||0;
       map[p[0]]={qty:parseFloat(qm[1])||0,unit:qm[2],sub};
     });
-    tbody+="<tr><td><b>"+esc(o["Cliente"]||"")+"</b></td><td style=\"font-size:7px;color:#555;\">"+esc(o["Note"]||"")+"</td>";
+    const tel=esc(o["Telefono"]||o["Tel"]||o["telefono"]||"");
+    tbody+="<tr><td class=\"td-cliente\">"+esc(o["Cliente"]||"")+"</td><td class=\"td-tel\">"+tel+"</td>";
+    if(hasNotes) tbody+="<td class=\"td-note\">"+esc(o["Note"]||"")+"</td>";
     prods.forEach(p=>{
       if(map[p.nome]){
         const d=map[p.nome];
         totCol[p.nome].qty+=d.qty;
         totCol[p.nome].sub+=d.sub;
-        tbody+="<td>"+d.qty+" "+esc(d.unit)+"<span class=\"msub\">&euro;"+d.sub.toFixed(2)+"</span></td>";
+        // Mostra solo quantità (unità già nell'header)
+        tbody+="<td class=\"td-qty\">"+d.qty+"<span class=\"msub\">&euro;"+d.sub.toFixed(2)+"</span></td>";
       } else {
         tbody+="<td class=\"dash\">&ndash;</td>";
       }
@@ -705,9 +846,10 @@ function buildMatrice(list){
   tbody+="</tbody>";
   const grandTotal=list.reduce((s,o)=>s+(parseFloat(o["Totale \u20ac"])||0),0);
   let tfoot="<tfoot><tr><td><b>Totali</b></td><td></td>";
+  if(hasNotes) tfoot+="<td></td>";
   prods.forEach(p=>{
     const c=totCol[p.nome];
-    tfoot+="<td>"+Math.round(c.qty*10)/10+" "+esc(c.unit)+"<span class=\"msub\">&euro;"+c.sub.toFixed(2)+"</span></td>";
+    tfoot+="<td class=\"td-qty\">"+Math.round(c.qty*10)/10+"<span class=\"msub\">&euro;"+c.sub.toFixed(2)+"</span></td>";
   });
   tfoot+="<td class=\"tot\">&euro;"+grandTotal.toFixed(2)+"</td></tr></tfoot>";
   document.getElementById("mtbl").innerHTML=thead+tbody+tfoot;
