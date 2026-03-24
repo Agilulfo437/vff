@@ -183,7 +183,7 @@ body,html{background:#fff;}
       <button class="btn btn-sm" onclick="loadOrders()">↻ Aggiorna</button>
       <button class="btn btn-sm btn-excel" onclick="exportExcel()">↓ Excel</button>
       <button class="btn btn-sm btn-pdf" onclick="printRaccolta()">Stampa verdura da raccogliere</button>
-      <button class="btn btn-sm btn-pdf" onclick="printMatrice()" style="background:#3d8a5c;">Stampa matrice</button>
+      <button class="btn btn-sm btn-pdf" onclick="printMatrice()">Stampa matrice</button>
       <button class="btn btn-sm btn-red" onclick="clearAllOrders()">🗑 Nuova settimana</button>
     </div>
   </div>
@@ -526,14 +526,31 @@ async function saveProds() {
 }
 
 // ─── WHATSAPP ─────────────────────────────────────────────────────────────────
+/** Compute next Friday and Saturday dates relative to now, formatted as "giorno mese" */
+function getNextFridaySaturday() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun..6=Sat
+  // Days until next Friday (5)
+  let daysToFri = (5 - day + 7) % 7;
+  if (daysToFri === 0 && now.getHours() >= 14) daysToFri = 7; // past deadline → next week
+  if (daysToFri === 0) daysToFri = 0; // Friday before deadline → this Friday
+  const fri = new Date(now);
+  fri.setDate(now.getDate() + daysToFri);
+  const sat = new Date(fri);
+  sat.setDate(fri.getDate() + 1);
+  const fmt = d => d.toLocaleDateString("it-IT", { day: "numeric", month: "long" });
+  return { fri: fmt(fri), sat: fmt(sat) };
+}
+
 function updateWA() {
   const week = getCurrentWeek();
+  const { fri, sat } = getNextFridaySaturday();
   const lines = prods.filter(p => p.n.trim())
     .map(p => `• ${p.n}  €${Number(p.p).toFixed(2)}/${p.u}`).join("\n");
   document.getElementById("watxt").textContent =
-    `Ciao! 🌿\nEcco i prodotti disponibili questa settimana:\n📅 ${week}\n\n` +
+    `Ciao! 🌿\nEcco i prodotti disponibili questa settimana, con consegna al mercato di Imperia Oneglia sabato ${sat}:\n\n` +
     `${lines || "(nessun prodotto)"}\n\n` +
-    `🛒 Per ordinare (entro venerdì ore 14:00):\n${LINK_ORDINE}\n\n` +
+    `🛒 Per ordinare (entro venerdì ${fri} ore 14:00):\n${LINK_ORDINE}\n\n` +
     `Buona settimana! — Verdura Felice Biodinamica`;
 }
 
