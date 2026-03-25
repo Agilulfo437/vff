@@ -46,9 +46,13 @@ input:focus,select:focus{border-color:var(--g);}
 .btn-red{background:var(--redl);color:var(--red);border-color:#f0c0b8;}
 .btn-excel{background:#e8f5e0;color:#2d6b20;border-color:#b8d8a8;}
 .btn:disabled{opacity:.45;cursor:not-allowed;}
-.ph{display:grid;grid-template-columns:1fr 86px 74px 28px;gap:6px;font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;padding:0 1px;}
-.pr{display:grid;grid-template-columns:1fr 86px 74px 28px;gap:6px;align-items:center;margin-bottom:7px;}
+.ph{display:grid;grid-template-columns:1fr 86px 74px 48px 28px;gap:6px;font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;padding:0 1px;}
+.pr{display:grid;grid-template-columns:1fr 86px 74px 48px 28px;gap:6px;align-items:center;margin-bottom:7px;}
 .pr input,.pr select{padding:8px 9px;font-size:13px;}
+.mv{display:flex;gap:2px;justify-content:center;}
+.mv button{background:none;border:1px solid var(--b);border-radius:4px;cursor:pointer;color:var(--tm);font-size:14px;padding:3px 6px;line-height:1;font-family:inherit;}
+.mv button:hover{border-color:var(--g);color:var(--g);}
+.mv button:disabled{opacity:.25;cursor:default;border-color:var(--b);color:var(--tm);}
 .dx{background:none;border:none;cursor:pointer;color:var(--tm);font-size:18px;padding:4px 2px;line-height:1;}
 .dx:hover{color:var(--red);}
 .addbtn{width:100%;padding:11px;border:1.5px dashed var(--b);border-radius:var(--rs);background:none;color:var(--tm);font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:13px;}
@@ -147,7 +151,7 @@ body,html{background:#fff;}
       <input type="text" id="week-input" placeholder="es. Giovedì 19 marzo – Mercoledì 25 marzo"
         oninput="updateWA()" style="font-size:13px;"/>
     </div>
-    <div class="ph"><span>Prodotto</span><span>Prezzo €</span><span>Unità</span><span></span></div>
+    <div class="ph"><span>Prodotto</span><span>Prezzo €</span><span>Unità</span><span>Ordine</span><span></span></div>
     <div id="pl"></div>
     <button class="addbtn" onclick="addProd()">+ Aggiungi prodotto</button>
     <button class="btn btn-g btn-full" id="save-btn" onclick="saveProds()">
@@ -476,6 +480,10 @@ function renderProds() {
       <select onchange="prods[${i}].u=this.value;updateWA()">
         ${UNITS.map(u => `<option${p.u === u ? " selected" : ""}>${u}</option>`).join("")}
       </select>
+      <div class="mv">
+        <button onclick="moveProd(${i},-1)" title="Sposta su"${i === 0 ? " disabled" : ""}>↑</button>
+        <button onclick="moveProd(${i},1)" title="Sposta giù"${i === prods.length - 1 ? " disabled" : ""}>↓</button>
+      </div>
       <button class="dx" onclick="delProd(${i})">×</button>
     </div>`).join("");
 }
@@ -489,6 +497,14 @@ function addProd() {
 }
 
 function delProd(i) { prods.splice(i, 1); renderProds(); updateWA(); }
+
+function moveProd(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= prods.length) return;
+  [prods[i], prods[j]] = [prods[j], prods[i]];
+  renderProds();
+  updateWA();
+}
 
 // ─── SAVE & PUBLISH ───────────────────────────────────────────────────────────
 async function saveProds() {
