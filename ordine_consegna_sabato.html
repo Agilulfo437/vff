@@ -93,6 +93,18 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
 /* Instagram link — reusable */
 .ig-link{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:10px 18px;background:#fff;border:1.5px solid #f0c0d0;border-radius:10px;text-decoration:none;}
 .ig-link span{font-size:14px;font-weight:500;color:#c2185b;letter-spacing:0.01em;}
+/* Success recap */
+.success-recap{background:#fff;border:1px solid var(--b);border-radius:var(--r);padding:14px;margin-top:18px;text-align:left;}
+.success-recap .sr-title{font-size:12px;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.success-recap .sr-line{font-size:13px;line-height:1.8;color:var(--t);}
+.success-recap .sr-total{font-size:16px;font-weight:bold;color:var(--gd);margin-top:10px;padding-top:8px;border-top:1px solid var(--b);}
+.success-recap .sr-note{font-size:12px;color:var(--tm);font-style:italic;margin-top:6px;}
+/* Last order banner (shown when form is open and previous order exists) */
+.last-order{background:#fff;border:1px solid var(--b);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.last-order .lo-title{font-size:12px;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.last-order .lo-meta{font-size:12px;color:var(--tm);margin-bottom:8px;}
+.last-order .lo-line{font-size:13px;line-height:1.8;color:var(--t);}
+.last-order .lo-total{font-size:15px;font-weight:bold;color:var(--gd);margin-top:8px;padding-top:8px;border-top:1px solid var(--b);}
 </style>
 </head>
 <body>
@@ -147,6 +159,13 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
     <div id="wb-banner" class="wb-banner" style="display:none;">
       <div class="wb-text">Bentornato, <span class="wb-name" id="wb-name"></span>!</div>
       <button class="wb-change" onclick="clearSavedCustomer()">Non sei tu? Cambia</button>
+    </div>
+    <!-- Last order banner — shown when a previous order is saved in localStorage -->
+    <div id="last-order" class="last-order" style="display:none;">
+      <div class="lo-title">Il tuo ultimo ordine</div>
+      <div id="lo-meta" class="lo-meta"></div>
+      <div id="lo-lines" class="lo-line"></div>
+      <div id="lo-total" class="lo-total"></div>
     </div>
     <div class="card">
       <div class="field">
@@ -207,6 +226,12 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
       L'ordine è definitivo.<br>
       Per modifiche o cancellazioni contatta Valeria direttamente per telefono.
     </div>
+    <div id="success-recap" class="success-recap" style="display:none;">
+      <div class="sr-title">Riepilogo del tuo ordine</div>
+      <div id="sr-lines" class="sr-line"></div>
+      <div id="sr-total" class="sr-total"></div>
+      <div id="sr-note" class="sr-note"></div>
+    </div>
     <a href="https://www.instagram.com/mascarellovaleria" target="_blank" class="ig-link" style="margin-top:18px;">
       <svg width="22" height="22"><use href="#ig-icon"/></svg>
       <span>@mascarellovaleria</span>
@@ -227,6 +252,7 @@ const DEADLINE_HOUR    = 14;
 const DEADLINE_MINUTE  = 15;
 const LS_KEY_NAME      = "vff_cliente_nome";
 const LS_KEY_TEL       = "vff_cliente_tel";
+const LS_KEY_LAST_ORDER = "vff_ultimo_ordine";
 // ─────────────────────────────────────────────────────────────────────────────
 
 let PRODUCTS = [], settimana = "";
@@ -288,6 +314,7 @@ function prefillCustomer() {
       refreshSum();
     }
   } catch (e) { /* localStorage unavailable — no problem, just skip */ }
+  showLastOrder();
 }
 
 /** Save name and phone after successful order */
@@ -309,6 +336,54 @@ function clearSavedCustomer() {
   document.getElementById("wb-banner").style.display = "none";
   document.getElementById("cname").focus();
   refreshSum();
+}
+
+// ─── LAST ORDER (localStorage) ───────────────────────────────────────────────
+/** Save order details to localStorage after successful submit */
+function saveLastOrder(name, items, total, notes, week) {
+  try {
+    const order = {
+      nome: name,
+      prodotti: items, // array of { nome, qty, unit, prezzo, sub }
+      totale: total,
+      note: notes,
+      settimana: week,
+      data: new Date().toLocaleString("it-IT")
+    };
+    localStorage.setItem(LS_KEY_LAST_ORDER, JSON.stringify(order));
+  } catch (e) { /* silent */ }
+}
+
+/** Build HTML lines from an order's product list */
+function buildOrderLines(prodotti) {
+  return prodotti.map(p =>
+    `${esc(p.nome)}: ${p.qty} ${esc(p.unit)} × €${Number(p.prezzo).toFixed(2)} = <b>€${Number(p.sub).toFixed(2)}</b>`
+  ).join("<br>");
+}
+
+/** Show the recap in the success page (called right after submit) */
+function showSuccessRecap(items, total, notes) {
+  const box = document.getElementById("success-recap");
+  document.getElementById("sr-lines").innerHTML = buildOrderLines(items);
+  document.getElementById("sr-total").textContent = "Totale: €" + total.toFixed(2);
+  const noteEl = document.getElementById("sr-note");
+  noteEl.textContent = notes ? "Note: " + notes : "";
+  noteEl.style.display = notes ? "block" : "none";
+  box.style.display = "block";
+}
+
+/** Show the last order banner in the form (called on page load if saved) */
+function showLastOrder() {
+  try {
+    const raw = localStorage.getItem(LS_KEY_LAST_ORDER);
+    if (!raw) return;
+    const order = JSON.parse(raw);
+    if (!order || !order.prodotti || !order.prodotti.length) return;
+    document.getElementById("lo-meta").textContent = (order.settimana || "") + " · " + (order.data || "");
+    document.getElementById("lo-lines").innerHTML = buildOrderLines(order.prodotti);
+    document.getElementById("lo-total").textContent = "Totale: €" + Number(order.totale).toFixed(2);
+    document.getElementById("last-order").style.display = "block";
+  } catch (e) { /* silent */ }
 }
 
 // ─── AUTOCLOSE LOGIC ─────────────────────────────────────────────────────────
@@ -503,6 +578,13 @@ async function doSubmit() {
       throw new Error(data.error || "Il server ha rifiutato l'ordine.");
     }
     saveCustomer(name, tel);
+    // Build items array for recap and localStorage
+    const orderItems = PRODUCTS.filter(p => (qty[p.id] || 0) > 0).map(p => {
+      const q = qty[p.id];
+      return { nome: p.n, qty: q, unit: p.u, prezzo: p.p, sub: Math.round(q * p.p * 100) / 100 };
+    });
+    saveLastOrder(name, orderItems, window._total || 0, notes, settimana);
+    showSuccessRecap(orderItems, window._total || 0, notes);
     document.getElementById("sname").textContent = name;
     showState("success");
     window.scrollTo(0, 0);
