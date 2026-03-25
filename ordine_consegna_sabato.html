@@ -346,7 +346,7 @@ async function init() {
     const cfg  = data.config || {};
 
     // Server-side gate: Valeria controls open/close via publishing
-    if (cfg.aperto === "false") {
+    if (String(cfg.aperto) === "false") {
       document.getElementById("next-open-label").textContent = getNextThursday();
       document.getElementById("header-orario").style.display = "none";
       showState("chiuso");
