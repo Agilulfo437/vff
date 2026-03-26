@@ -247,10 +247,10 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbyIm7gCfJCC98WmsqnVx-B1EgABWQdbywdcvzeGRY2eckjkyNrluf3BBEyr_OcJkyYl/exec";
-const SECRET_TOKEN = "vff-giovedi-2025";
-const FETCH_TIMEOUT_MS = 20000;  // [FIX 4] timeout per fetch
-const PHONE_MIN_DIGITS = 9;      // [FIX 13] magic numbers as constants
+const SUPABASE_URL = "https://ojzojxpncbapqheiaitm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qem9qeHBuY2JhcHFoZWlhaXRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Nzc1MzksImV4cCI6MjA5MDA1MzUzOX0.YyKcZ11oW43umbzmL0mn2-qaeIEIIlD96UgVf2iOe7w";
+const FETCH_TIMEOUT_MS = 15000;
+const PHONE_MIN_DIGITS = 9;
 const PHONE_MAX_DIGITS = 10;
 const DEADLINE_HOUR    = 14;
 const DEADLINE_MINUTE  = 15;
@@ -258,6 +258,14 @@ const LS_KEY_NAME      = "vff_cliente_nome";
 const LS_KEY_TEL       = "vff_cliente_tel";
 const LS_KEY_LAST_ORDER = "vff_ultimo_ordine";
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─── SUPABASE HELPERS ────────────────────────────────────────────────────────
+function sbHeaders(key) {
+  return { "Content-Type": "application/json", "apikey": key, "Authorization": "Bearer " + key };
+}
+function sbUrl(table, params) {
+  return SUPABASE_URL + "/rest/v1/" + table + (params ? "?" + params : "");
+}
 
 let PRODUCTS = [], settimana = "";
 const qty = {};
@@ -409,7 +417,7 @@ function isOutsideOrderWindow() {
 async function init() {
   showState("loading");
 
-  // [FIX 3] Client-side time gate
+  // Client-side time gate
   if (isOutsideOrderWindow()) {
     document.getElementById("next-open-label").textContent = getNextThursday();
     document.getElementById("header-orario").style.display = "none";
@@ -418,14 +426,17 @@ async function init() {
   }
 
   try {
-    // [FIX 4] fetch with timeout
-    const res  = await fetchWithTimeout(SCRIPT_URL + "?action=config");
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || "Errore");
-    const cfg  = data.config || {};
+    const res = await fetchWithTimeout(
+      sbUrl("config", "id=eq.giovedi&select=*"),
+      { headers: sbHeaders(SUPABASE_ANON_KEY) }
+    );
+    if (!res.ok) throw new Error("Errore server: " + res.status);
+    const rows = await res.json();
+    if (!rows.length) throw new Error("Configurazione non trovata.");
+    const cfg = rows[0];
 
     // Server-side gate: Valeria controls open/close via publishing
-    if (String(cfg.aperto) === "false") {
+    if (!cfg.aperto) {
       document.getElementById("next-open-label").textContent = getNextThursday();
       document.getElementById("header-orario").style.display = "none";
       showState("chiuso");
@@ -566,20 +577,32 @@ async function doSubmit() {
   btn.textContent = "Invio in corso...";
   document.getElementById("confirm-err").style.display = "none";
   try {
-    // [FIX 1] fetch with timeout + check response body
-    const res = await fetchWithTimeout(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        token: SECRET_TOKEN, cliente: name, telefono: tel,
-        prodotti: (window._rows || []).join("\n"),
-        totale: (window._total || 0).toFixed(2),
-        note: notes, settimana
-      })
-    });
-    const data = await res.json();
-    // [FIX 1] Only show success if server confirms ok
-    if (!data.ok) {
-      throw new Error(data.error || "Il server ha rifiutato l'ordine.");
+    // Generate order ID: VFF-YYYYMMDD-HHMM-random
+    const now = new Date();
+    const pad = (n, l=2) => String(n).padStart(l, "0");
+    const orderId = "VFF-" + now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate())
+      + "-" + pad(now.getHours()) + pad(now.getMinutes())
+      + "-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+
+    const res = await fetchWithTimeout(
+      sbUrl("ordini"),
+      {
+        method: "POST",
+        headers: { ...sbHeaders(SUPABASE_ANON_KEY), "Prefer": "return=minimal" },
+        body: JSON.stringify({
+          id: orderId,
+          cliente: name,
+          telefono: tel,
+          prodotti_dettaglio: (window._rows || []).join("\n"),
+          totale: parseFloat((window._total || 0).toFixed(2)),
+          note: notes || null,
+          settimana: settimana
+        })
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Il server ha rifiutato l'ordine.");
     }
     saveCustomer(name, tel);
     // Build items array for recap and localStorage

@@ -228,13 +228,22 @@ body,html{background:#fff;}
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const PASSWORD     = "frutta2025";
-const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbyIm7gCfJCC98WmsqnVx-B1EgABWQdbywdcvzeGRY2eckjkyNrluf3BBEyr_OcJkyYl/exec";
-const SECRET_TOKEN = "vff-giovedi-2025";
+const SUPABASE_URL = "https://ojzojxpncbapqheiaitm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qem9qeHBuY2JhcHFoZWlhaXRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Nzc1MzksImV4cCI6MjA5MDA1MzUzOX0.YyKcZ11oW43umbzmL0mn2-qaeIEIIlD96UgVf2iOe7w";
+const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qem9qeHBuY2JhcHFoZWlhaXRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDQ3NzUzOSwiZXhwIjoyMDkwMDUzNTM5fQ.Uam1_vjix-P9bBGBohl50_IkSy9pZxiyTrYM5PXcbJw";
 const LINK_ORDINE  = "https://verdurafelice.it/ordine_consegna_sabato.html";
 const UNITS        = ["kg","etti","cad","mazzo","busta","cassetta","pz","litro","vaschetta"];
 const XLSX_CDN     = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
-const FETCH_TIMEOUT_MS = 20000;
+const FETCH_TIMEOUT_MS = 15000;
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─── SUPABASE HELPERS ────────────────────────────────────────────────────────
+function sbHeaders(key) {
+  return { "Content-Type": "application/json", "apikey": key, "Authorization": "Bearer " + key };
+}
+function sbUrl(table, params) {
+  return SUPABASE_URL + "/rest/v1/" + table + (params ? "?" + params : "");
+}
 
 let prods = [], cfg = {}, orders = [];
 let nextId = Date.now();  // [FIX 5] timestamp-based IDs to avoid collisions
@@ -283,7 +292,7 @@ function parseProductLine(line) {
 
 /** [FIX 6] Parse all product lines from an order, returns array of parsed items */
 function parseOrderProducts(order) {
-  return (order["Prodotti (dettaglio)"] || "").split("\n")
+  return (order["prodotti_dettaglio"] || order["Prodotti (dettaglio)"] || "").split("\n")
     .map(parseProductLine)
     .filter(Boolean);
 }
@@ -310,7 +319,7 @@ function buildProductMap(order) {
 
 /** Get order telephone, handling various field names from Sheets */
 function getOrderTel(o) {
-  return o["Telefono"] || o["Tel"] || o["telefono"] || "";
+  return o["telefono"] || o["Telefono"] || o["Tel"] || "";
 }
 
 /** [FIX 8] Load XLSX library on demand */
@@ -374,18 +383,21 @@ function init() {
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app").style.display = "block";
   }
-  cfg = { url: SCRIPT_URL, shop: "Verdura e Frutta Felice", link: LINK_ORDINE };
+  cfg = { shop: "Verdura e Frutta Felice", link: LINK_ORDINE };
   const today = new Date().toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
 
-  fetchWithTimeout(cfg.url + "?action=config")
+  fetchWithTimeout(
+    sbUrl("config", "id=eq.giovedi&select=*"),
+    { headers: sbHeaders(SUPABASE_ANON_KEY) }
+  )
     .then(r => r.json())
-    .then(data => {
-      if (data.ok && data.config) {
-        const c = data.config;
-        prods = (c.prodotti && c.prodotti.length) ? c.prodotti : [];  // [FIX 11] no hardcoded defaults on success
+    .then(rows => {
+      if (rows.length) {
+        const c = rows[0];
+        prods = (c.prodotti && c.prodotti.length) ? c.prodotti : [];
         const week = c.settimana || getNextThursdayRange();
         setWeekUI(week, today);
-        mostraChiudiBox(String(c.aperto) === "true");
+        mostraChiudiBox(!!c.aperto);
       } else {
         caricaDefault(today);
       }
@@ -417,16 +429,20 @@ async function chiudiOrdini() {
   const btn = document.querySelector("#chiudi-box button");
   btn.disabled = true;
   try {
-    // [FIX 2] Check response body
-    const res = await fetchWithTimeout(cfg.url, { method: "POST", body: JSON.stringify({
-      action: "toggleAperto", token: SECRET_TOKEN, aperto: false
-    })});
-    const data = await res.json();
-    if (data.ok) {
+    const res = await fetchWithTimeout(
+      sbUrl("config", "id=eq.giovedi"),
+      {
+        method: "PATCH",
+        headers: sbHeaders(SUPABASE_SERVICE_KEY),
+        body: JSON.stringify({ aperto: false })
+      }
+    );
+    if (res.ok) {
       mostraChiudiBox(false);
       showMsg("pmsg", "ok", "✓ Ordini chiusi — nessun nuovo ordine in entrata.");
     } else {
-      showMsg("pmsg", "err", "Errore: " + (data.error || "Risposta non valida dal server."));
+      const err = await res.json().catch(() => ({}));
+      showMsg("pmsg", "err", "Errore: " + (err.message || "Risposta non valida dal server."));
     }
   } catch (e) {
     const msg = e.name === "AbortError" ? "Il server non risponde. Riprova." : "Errore di rete: " + e.message;
@@ -508,28 +524,30 @@ function moveProd(i, dir) {
 
 // ─── SAVE & PUBLISH ───────────────────────────────────────────────────────────
 async function saveProds() {
-  if (!cfg.url) { showMsg("pmsg", "err", "URL script non configurato."); return; }
   const btn = document.getElementById("save-btn");
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span>Pubblicazione...';
   localStorage.setItem("vff_prods", JSON.stringify(prods));
   try {
-    // [FIX 2] Check response body for server-side errors
-    const res = await fetchWithTimeout(cfg.url, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "saveConfig", token: SECRET_TOKEN,
-        shop: cfg.shop || "Verdura e Frutta Felice",
-        settimana: getCurrentWeek(),
-        prodotti: prods.filter(p => p.n.trim()),
-      })
-    });
-    const data = await res.json();
-    if (data.ok) {
+    const res = await fetchWithTimeout(
+      sbUrl("config", "id=eq.giovedi"),
+      {
+        method: "PATCH",
+        headers: sbHeaders(SUPABASE_SERVICE_KEY),
+        body: JSON.stringify({
+          shop: cfg.shop || "Verdura e Frutta Felice",
+          settimana: getCurrentWeek(),
+          prodotti: prods.filter(p => p.n.trim()),
+          aperto: true
+        })
+      }
+    );
+    if (res.ok) {
       showMsg("pmsg", "ok", "✓ Lista pubblicata! I clienti vedono già i prodotti aggiornati.");
       mostraChiudiBox(true);
     } else {
-      showMsg("pmsg", "err", "Errore dal server: " + (data.error || "Risposta non valida."));
+      const err = await res.json().catch(() => ({}));
+      showMsg("pmsg", "err", "Errore dal server: " + (err.message || "Risposta non valida."));
     }
   } catch (e) {
     const msg = e.name === "AbortError"
@@ -578,18 +596,19 @@ function copyWA() {
 
 // ─── ORDERS LOADING ───────────────────────────────────────────────────────────
 async function loadOrders() {
-  if (!cfg.url) { renderOrders([]); return; }
-
-  // [FIX 14] Show loading indicator
+  // Show loading indicator
   document.getElementById("tb-prod").innerHTML =
     '<tr><td colspan="4" class="riepilogo-loading"><div class="spin"></div>Caricamento ordini...</td></tr>';
   document.getElementById("tb-orders").innerHTML =
     '<tr><td colspan="6" class="riepilogo-loading"><div class="spin"></div>Caricamento...</td></tr>';
 
   try {
-    const res = await fetchWithTimeout(cfg.url + "?action=orders");
-    const data = await res.json();
-    orders = (data.orders || []).reverse();
+    const res = await fetchWithTimeout(
+      sbUrl("ordini", "archiviato=eq.false&order=timestamp.desc"),
+      { headers: sbHeaders(SUPABASE_SERVICE_KEY) }
+    );
+    if (!res.ok) throw new Error("Errore server: " + res.status);
+    orders = await res.json();
     renderOrders(orders);
   } catch (e) {
     const msg = e.name === "AbortError" ? "Il server non risponde." : e.message;
@@ -604,9 +623,9 @@ async function loadOrders() {
 // [FIX 6] Uses centralized parseOrderProducts / buildProductMap / extractUniqueProducts
 function renderOrders(list) {
   buildMatrice(list);
-  const totalEur = list.reduce((s, o) => s + (parseFloat(o["Totale €"]) || 0), 0);
+  const totalEur = list.reduce((s, o) => s + (parseFloat(o["totale"]) || 0), 0);
   document.getElementById("s-n").textContent = list.length;
-  document.getElementById("s-c").textContent = new Set(list.map(o => o["Cliente"])).size;
+  document.getElementById("s-c").textContent = new Set(list.map(o => o["cliente"])).size;
   document.getElementById("s-t").textContent = "€" + totalEur.toFixed(2);
 
   if (!list.length) {
@@ -640,15 +659,15 @@ function renderOrders(list) {
 
   // Orders table
   document.getElementById("tb-orders").innerHTML = list.map((o, i) => {
-    const tot = parseFloat(o["Totale €"]) || 0;
+    const tot = parseFloat(o["totale"]) || 0;
     const lines = parseOrderProducts(o)
       .map(p => `${esc(p.nome)}: ${p.qty} ${esc(p.unit)}`)
       .join("<br>");
     return `<tr id="orow-${i}">
-      <td><b>${esc(o["Cliente"])}</b><div style="font-size:11px;color:var(--tm)">${fmtDate(o["Timestamp"])}</div></td>
+      <td><b>${esc(o["cliente"])}</b><div style="font-size:11px;color:var(--tm)">${fmtDate(o["timestamp"])}</div></td>
       <td style="font-size:12px;color:var(--tm);">${esc(getOrderTel(o) || "—")}</td>
       <td style="font-size:12px;color:var(--tm);">${lines}</td>
-      <td style="font-size:12px;color:var(--tm);font-style:italic;">${esc(o["Note"] || "—")}</td>
+      <td style="font-size:12px;color:var(--tm);font-style:italic;">${esc(o["note"] || "—")}</td>
       <td style="text-align:right;font-weight:bold;color:var(--gd);">€${tot.toFixed(2)}</td>
       <td><button class="dx no-print" onclick="deleteOrder(${i})" title="Elimina">×</button></td>
     </tr>`;
@@ -656,15 +675,15 @@ function renderOrders(list) {
 
   // Client cards
   document.getElementById("ccards").innerHTML = list.map((o, i) => {
-    const tot = parseFloat(o["Totale €"]) || 0;
+    const tot = parseFloat(o["totale"]) || 0;
     const rows = parseOrderProducts(o).map(p =>
       `<tr><td>${esc(p.nome)}</td><td>${p.qty} ${esc(p.unit)}</td><td>€${p.prezzo.toFixed(2)}</td><td style="text-align:right">€${p.subtotale.toFixed(2)}</td></tr>`
     ).join("");
     return `<div class="cc" id="ocard-${i}">
       <div class="cc-head">
         <div>
-          <div class="cc-name">${esc(o["Cliente"])}</div>
-          <div class="cc-meta">${esc(o["Settimana"] || "")} · ${fmtDate(o["Timestamp"])}${getOrderTel(o) ? " · " + esc(getOrderTel(o)) : ""}</div>
+          <div class="cc-name">${esc(o["cliente"])}</div>
+          <div class="cc-meta">${esc(o["settimana"] || "")} · ${fmtDate(o["timestamp"])}${getOrderTel(o) ? " · " + esc(getOrderTel(o)) : ""}</div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <button class="dx no-print" onclick="deleteOrder(${i})" title="Elimina" style="font-size:22px;">×</button>
@@ -674,7 +693,7 @@ function renderOrders(list) {
         <thead><tr><th>Prodotto</th><th>Qtà</th><th>Prezzo</th><th style="text-align:right">Subtotale</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      ${o["Note"] ? `<div class="cc-note">Note: ${esc(o["Note"])}</div>` : ""}
+      ${o["note"] ? `<div class="cc-note">Note: ${esc(o["note"])}</div>` : ""}
       <div class="cc-foot">
         <span style="font-size:13px;color:var(--tm);">Da incassare:</span>
         <span class="cc-pay">€${tot.toFixed(2)}</span>
@@ -687,25 +706,26 @@ function renderOrders(list) {
 // [FIX 15] deleteOrder now waits for server confirmation before updating UI
 async function deleteOrder(i) {
   const o = orders[i];
-  if (!confirm(`Eliminare l'ordine di "${o["Cliente"]}"?`)) return;
+  if (!confirm(`Eliminare l'ordine di "${o["cliente"]}"?`)) return;
 
   // Save reference for rollback
   const removed = orders.splice(i, 1)[0];
   renderOrders(orders);
 
   try {
-    const res = await fetchWithTimeout(cfg.url, { method: "POST", body: JSON.stringify({
-      action: "deleteRow", token: SECRET_TOKEN, id: String(o["ID"])
-    })});
-    const data = await res.json();
-    if (!data.ok) {
-      // Rollback on server error
+    const res = await fetchWithTimeout(
+      sbUrl("ordini", "id=eq." + encodeURIComponent(String(o["id"]))),
+      {
+        method: "DELETE",
+        headers: sbHeaders(SUPABASE_SERVICE_KEY)
+      }
+    );
+    if (!res.ok) {
       orders.splice(i, 0, removed);
       renderOrders(orders);
       showMsg("pmsg", "err", "Errore dal server durante l'eliminazione. Ordine ripristinato.");
     }
   } catch (e) {
-    // Rollback on network error
     orders.splice(i, 0, removed);
     renderOrders(orders);
     showMsg("pmsg", "err", "Errore rete — ordine ripristinato. Ricarica per verificare.");
@@ -713,22 +733,38 @@ async function deleteOrder(i) {
 }
 
 async function clearAllOrders() {
-  if (!confirm("Cancellare TUTTI gli ordini della settimana?\n\nAssicurati di aver già stampato il riepilogo.")) return;
-  if (!confirm("Sei sicuro? Questa operazione non è reversibile.")) return;
+  if (!confirm("Archiviare TUTTI gli ordini della settimana?\n\nAssicurati di aver già stampato il riepilogo.\n(Gli ordini restano consultabili nello storico)")) return;
+  if (!confirm("Sei sicuro? Gli ordini verranno archiviati.")) return;
   try {
-    const res = await fetchWithTimeout(cfg.url, { method: "POST", body: JSON.stringify({
-      action: "clearOrders", token: SECRET_TOKEN
-    })});
-    const data = await res.json();
-    if (data.ok) {
+    // Archive all current orders (archiviato = true)
+    const res = await fetchWithTimeout(
+      sbUrl("ordini", "archiviato=eq.false"),
+      {
+        method: "PATCH",
+        headers: sbHeaders(SUPABASE_SERVICE_KEY),
+        body: JSON.stringify({ archiviato: true })
+      }
+    );
+    if (res.ok) {
+      // Close the form for next week
+      await fetchWithTimeout(
+        sbUrl("config", "id=eq.giovedi"),
+        {
+          method: "PATCH",
+          headers: sbHeaders(SUPABASE_SERVICE_KEY),
+          body: JSON.stringify({ aperto: false })
+        }
+      );
       orders = [];
       renderOrders([]);
+      mostraChiudiBox(false);
       const newWeek = getNextThursdayRange();
       const today = new Date().toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
       setWeekUI(newWeek, today);
-      showMsg("pmsg", "ok", "✓ Ordini cancellati. Pronto per la nuova settimana!");
+      showMsg("pmsg", "ok", "✓ Ordini archiviati. Pronto per la nuova settimana!");
     } else {
-      showMsg("pmsg", "err", "Errore: " + (data.error || ""));
+      const err = await res.json().catch(() => ({}));
+      showMsg("pmsg", "err", "Errore: " + (err.message || ""));
     }
   } catch (e) {
     const msg = e.name === "AbortError" ? "Il server non risponde." : e.message;
@@ -754,7 +790,7 @@ async function exportExcel() {
   const rows = [["Settimana", "Cliente", "Telefono", "Prodotto", "Qtà", "Unità", "Prezzo €", "Subtotale €"]];
   orders.forEach(o => {
     parseOrderProducts(o).forEach(p => {
-      rows.push([o["Settimana"] || week, o["Cliente"] || "", getOrderTel(o), p.nome, p.qty, p.unit, p.prezzo, p.subtotale]);
+      rows.push([o["settimana"] || week, o["cliente"] || "", getOrderTel(o), p.nome, p.qty, p.unit, p.prezzo, p.subtotale]);
     });
   });
   const wb = XLSX.utils.book_new();
@@ -764,7 +800,7 @@ async function exportExcel() {
 
   // Sheet 2: Summary per client
   const rRows = [["Cliente", "Telefono", "Totale €", "Note"]];
-  orders.forEach(o => rRows.push([o["Cliente"] || "", getOrderTel(o), parseFloat(o["Totale €"]) || 0, o["Note"] || ""]));
+  orders.forEach(o => rRows.push([o["cliente"] || "", getOrderTel(o), parseFloat(o["totale"]) || 0, o["note"] || ""]));
   const ws2 = XLSX.utils.aoa_to_sheet(rRows);
   ws2["!cols"] = [{ wch: 20 }, { wch: 14 }, { wch: 10 }, { wch: 30 }];
   XLSX.utils.book_append_sheet(wb, ws2, "Riepilogo");
@@ -774,7 +810,7 @@ async function exportExcel() {
   const mRows = [["Cliente", "Note", ...mProds.map(p => p.nome + " (" + p.unit + ")"), "Totale €"]];
   orders.forEach(o => {
     const map = buildProductMap(o);
-    mRows.push([o["Cliente"] || "", o["Note"] || "", ...mProds.map(p => map[p.nome] ? map[p.nome].qty : ""), parseFloat(o["Totale €"]) || 0]);
+    mRows.push([o["cliente"] || "", o["note"] || "", ...mProds.map(p => map[p.nome] ? map[p.nome].qty : ""), parseFloat(o["totale"]) || 0]);
   });
   // Totals row
   const totRow = ["Totali", ""];
@@ -785,7 +821,7 @@ async function exportExcel() {
     }, 0);
     totRow.push(Math.round(t * 10) / 10);
   });
-  totRow.push(orders.reduce((s, o) => s + (parseFloat(o["Totale €"]) || 0), 0));
+  totRow.push(orders.reduce((s, o) => s + (parseFloat(o["totale"]) || 0), 0));
   mRows.push(totRow);
   const ws3 = XLSX.utils.aoa_to_sheet(mRows);
   ws3["!cols"] = [{ wch: 22 }, { wch: 28 }, ...mProds.map(() => ({ wch: 14 })), { wch: 10 }];
@@ -803,7 +839,7 @@ function buildMatrice(list) {
   const prodsList = extractUniqueProducts(list);
   if (!prodsList.length) { document.getElementById("mtbl").innerHTML = ""; return; }
 
-  const hasNotes = list.some(o => (o["Note"] || "").trim() !== "");
+  const hasNotes = list.some(o => (o["note"] || "").trim() !== "");
 
   // Header
   let thead = '<thead><tr><th class="th-cliente">Cliente</th><th class="th-tel">Telefono</th>';
@@ -819,8 +855,8 @@ function buildMatrice(list) {
   let tbody = "<tbody>";
   list.forEach(o => {
     const map = buildProductMap(o);
-    tbody += `<tr><td class="td-cliente">${esc(o["Cliente"] || "")}</td><td class="td-tel">${esc(getOrderTel(o))}</td>`;
-    if (hasNotes) tbody += `<td class="td-note">${esc(o["Note"] || "")}</td>`;
+    tbody += `<tr><td class="td-cliente">${esc(o["cliente"] || "")}</td><td class="td-tel">${esc(getOrderTel(o))}</td>`;
+    if (hasNotes) tbody += `<td class="td-note">${esc(o["note"] || "")}</td>`;
     prodsList.forEach(p => {
       if (map[p.nome]) {
         const d = map[p.nome];
@@ -831,13 +867,13 @@ function buildMatrice(list) {
         tbody += '<td class="dash">&ndash;</td>';
       }
     });
-    const tot = parseFloat(o["Totale €"]) || 0;
+    const tot = parseFloat(o["totale"]) || 0;
     tbody += `<td class="tot">&euro;${tot.toFixed(2)}</td></tr>`;
   });
   tbody += "</tbody>";
 
   // Footer
-  const grandTotal = list.reduce((s, o) => s + (parseFloat(o["Totale €"]) || 0), 0);
+  const grandTotal = list.reduce((s, o) => s + (parseFloat(o["totale"]) || 0), 0);
   let tfoot = '<tfoot><tr><td><b>Totali</b></td><td></td>';
   if (hasNotes) tfoot += '<td></td>';
   prodsList.forEach(p => {
@@ -914,7 +950,7 @@ function printMatrice() {
   if (!list.length) { alert("Nessun ordine da stampare."); return; }
 
   const prodsList = extractUniqueProducts(list);
-  const hasNotes = list.some(o => (o["Note"] || "").trim() !== "");
+  const hasNotes = list.some(o => (o["note"] || "").trim() !== "");
 
   // [FIX 13] Named layout constants
   const LAYOUT = {
@@ -943,7 +979,7 @@ function printMatrice() {
 
   // All client totals
   const allTotals = {};
-  list.forEach(o => { allTotals[o["Cliente"] || ""] = parseFloat(o["Totale €"]) || 0; });
+  list.forEach(o => { allTotals[o["cliente"] || ""] = parseFloat(o["totale"]) || 0; });
 
   // Build pages
   let pages = "";
@@ -978,11 +1014,11 @@ function buildMatricePage(pChunk, rChunk, pageNum, colLabel, rowLabel, isFirstCo
   let tbody = "<tbody>";
   rChunk.forEach(o => {
     const map = buildProductMap(o);
-    tbody += `<tr><td class="td-cliente">${esc(o["Cliente"] || "")}</td>`;
+    tbody += `<tr><td class="td-cliente">${esc(o["cliente"] || "")}</td>`;
     if (isFirstCol) {
       tbody += `<td class="td-tel">${esc(getOrderTel(o))}</td>`;
-      if (hasNotes) tbody += `<td class="td-note">${esc(o["Note"] || "")}</td>`;
-      const fullTot = allTotals[o["Cliente"] || ""] || 0;
+      if (hasNotes) tbody += `<td class="td-note">${esc(o["note"] || "")}</td>`;
+      const fullTot = allTotals[o["cliente"] || ""] || 0;
       tbody += `<td class="tot">&euro;${fullTot.toFixed(2)}</td>`;
     }
     pChunk.forEach(p => {
@@ -999,7 +1035,7 @@ function buildMatricePage(pChunk, rChunk, pageNum, colLabel, rowLabel, isFirstCo
   });
   tbody += "</tbody>";
 
-  const grandTotal = rChunk.reduce((s, o) => s + (allTotals[o["Cliente"] || ""] || 0), 0);
+  const grandTotal = rChunk.reduce((s, o) => s + (allTotals[o["cliente"] || ""] || 0), 0);
   let tfoot = '<tfoot><tr><td><b>Totali</b></td>';
   if (isFirstCol) {
     tfoot += '<td></td>';
