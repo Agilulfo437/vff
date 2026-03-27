@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Verdura e Frutta Felice — Ordina</title>
+<title>Verdura e Frutta Felice — Ordina (Mercoledì)</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -31,6 +31,8 @@ textarea{height:68px;resize:none;font-size:14px;}
 .pinfo{flex:1;min-width:0;}
 .pname{font-size:15px;font-family:Georgia,serif;line-height:1.3;}
 .pprice{font-size:12px;color:var(--tm);margin-top:3px;}
+.pimg{width:70px;height:52px;border-radius:6px;object-fit:cover;flex-shrink:0;}
+.pdesc{font-size:11px;color:var(--tm);margin-top:3px;line-height:1.4;}
 .qcol{display:flex;flex-direction:column;align-items:center;gap:3px;}
 .qrow{display:flex;align-items:center;gap:7px;}
 .qbtn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--b);background:#fff;font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--g);font-weight:bold;-webkit-tap-highlight-color:transparent;user-select:none;}
@@ -111,7 +113,7 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
 
 <header>
   <h1>🌿 Verdura e Frutta Felice</h1>
-  <p id="header-orario">Consegna <strong style="color:#b8ddc0;">sabato al mercato di Imperia Oneglia</strong> · Lista disponibile da giovedì · Ordini entro <strong style="color:#b8ddc0;">venerdì ore 14:00</strong></p>
+  <p id="header-orario">Consegna <strong style="color:#b8ddc0;">mercoledì</strong> · Lista disponibile da lunedì · Ordini entro <strong style="color:#b8ddc0;">martedì ore 23:00</strong></p>
   <div class="wpill" id="wpill" style="display:none;"></div>
 </header>
 
@@ -136,8 +138,8 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
   <div id="st-chiuso" class="chiuso" style="display:none;">
     <div class="chiuso-icon">🌿</div>
     <h2>Ci vediamo la prossima settimana!</h2>
-    <p>Il termine per ordinare è <strong>venerdì alle ore 14:00</strong>.<br>
-    La nuova lista per le consegne del sabato al mercato di Imperia Oneglia sarà disponibile da:</p>
+    <p>Il termine per ordinare è <strong>martedì alle ore 23:00</strong>.<br>
+    La nuova lista per le consegne del mercoledì sarà disponibile da:</p>
     <div class="next-open" id="next-open-label"></div>
     <p style="margin-top:18px;font-size:13px;">Seguici su Instagram per conoscere meglio l'Azienda Biodinamica Valeria Mascarello</p>
     <a href="https://www.instagram.com/mascarellovaleria" target="_blank" class="ig-link">
@@ -224,7 +226,7 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
     <h2>Ordine confermato!</h2>
     <p>Grazie <strong id="sname"></strong>!<br>
     Il tuo ordine è stato registrato.<br>
-    Potrai ritirare l'ordine preparato da Valeria al mercato rionale di Imperia Oneglia.</p>
+    Riceverai la consegna mercoledì.</p>
     <div class="final-warn">
       L'ordine è definitivo.<br>
       Per modifiche o cancellazioni contatta Valeria direttamente per telefono.
@@ -249,15 +251,16 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://ojzojxpncbapqheiaitm.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qem9qeHBuY2JhcHFoZWlhaXRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Nzc1MzksImV4cCI6MjA5MDA1MzUzOX0.YyKcZ11oW43umbzmL0mn2-qaeIEIIlD96UgVf2iOe7w";
-const CONFIG_ID        = "sabato";
+const CONFIG_ID        = "mercoledi";
 const FETCH_TIMEOUT_MS = 15000;
 const PHONE_MIN_DIGITS = 9;
 const PHONE_MAX_DIGITS = 10;
-const DEADLINE_HOUR    = 14;
-const DEADLINE_MINUTE  = 15;
-const LS_KEY_NAME      = "vff_cliente_nome";
-const LS_KEY_TEL       = "vff_cliente_tel";
-const LS_KEY_LAST_ORDER = "vff_ultimo_ordine";
+const DEADLINE_HOUR    = 23;
+const DEADLINE_MINUTE  = 0;
+const LS_KEY_NAME      = "vff_cliente_nome_mer";
+const LS_KEY_TEL       = "vff_cliente_tel_mer";
+const LS_KEY_LAST_ORDER = "vff_ultimo_ordine_mer";
+const IMG_BASE_URL     = "img/";
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── SUPABASE HELPERS ────────────────────────────────────────────────────────
@@ -299,12 +302,12 @@ function getWeekRange() {
   return formatDateIT(thu);
 }
 
-function getNextThursday() {
+function getNextMonday() {
   const now = new Date();
-  const daysToThu = (4 - now.getDay() + 7) % 7 || 7;
-  const thu = new Date(now);
-  thu.setDate(now.getDate() + daysToThu);
-  return formatDateIT(thu);
+  const daysToMon = (1 - now.getDay() + 7) % 7 || 7;
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + daysToMon);
+  return formatDateIT(mon);
 }
 
 function showState(s) {
@@ -400,17 +403,16 @@ function showLastOrder() {
 }
 
 // ─── AUTOCLOSE LOGIC ─────────────────────────────────────────────────────────
-/** [FIX 3] Restored autoClose — client-side time gate before checking server.
- *  Form is open Wed–Fri 14:15. Outside that window, no API call needed. */
+/** Time gate for mercoledì: open Sun → Tue 23:00. Closed Wed–Sat. */
 function isOutsideOrderWindow() {
   const now = new Date();
   const day = now.getDay();  // 0=Sun, 1=Mon, ..., 6=Sat
   const h = now.getHours(), m = now.getMinutes();
-  // Sat, Sun, Mon, Tue → always closed
-  if (day === 6 || day === 0 || day === 1 || day === 2) return true;
-  // Fri after 14:15 → closed
-  if (day === 5 && (h > DEADLINE_HOUR || (h === DEADLINE_HOUR && m >= DEADLINE_MINUTE))) return true;
-  // Wed, Thu, Fri before deadline → open (will still check server-side 'aperto')
+  // Wed, Thu, Fri, Sat → always closed
+  if (day === 3 || day === 4 || day === 5 || day === 6) return true;
+  // Tue after 23:00 → closed
+  if (day === 2 && (h > DEADLINE_HOUR || (h === DEADLINE_HOUR && m >= DEADLINE_MINUTE))) return true;
+  // Sun, Mon, Tue before deadline → open (will still check server-side 'aperto')
   return false;
 }
 
@@ -420,7 +422,7 @@ async function init() {
 
   // Client-side time gate
   if (isOutsideOrderWindow()) {
-    document.getElementById("next-open-label").textContent = getNextThursday();
+    document.getElementById("next-open-label").textContent = getNextMonday();
     document.getElementById("header-orario").style.display = "none";
     showState("chiuso");
     return;
@@ -438,7 +440,7 @@ async function init() {
 
     // Server-side gate: Valeria controls open/close via publishing
     if (!cfg.aperto) {
-      document.getElementById("next-open-label").textContent = getNextThursday();
+      document.getElementById("next-open-label").textContent = getNextMonday();
       document.getElementById("header-orario").style.display = "none";
       showState("chiuso");
       return;
@@ -474,15 +476,19 @@ function renderProducts() {
   document.getElementById("plist").innerHTML = PRODUCTS.map(p => {
     const q = qty[p.id] || 0;
     const noteHtml = p.note ? `<span style="font-size:11px;color:var(--tm);margin-left:5px;">(${esc(p.note)})</span>` : "";
+    const imgHtml = p.img ? `<img class="pimg" src="${IMG_BASE_URL}${esc(p.img)}" alt="${esc(p.n)}" loading="lazy"/>` : "";
+    const descHtml = p.desc ? `<div class="pdesc">${esc(p.desc)}</div>` : "";
     return `<div class="pi${q > 0 ? " on" : ""}" id="pi-${p.id}">
+      ${imgHtml}
       <div class="pinfo">
         <div class="pname">${esc(p.n)}${noteHtml}</div>
         <div class="pprice">€${Number(p.p).toFixed(2)} / ${esc(p.u)}</div>
+        ${descHtml}
       </div>
       <div class="qcol"><div class="qrow">
-        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',-${p.step || 0.5})">−</button>
+        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',-${p.step || 1})">−</button>
         <div><div class="qval" id="qv-${p.id}">${q}</div><div class="qunit">${esc(p.u)}</div></div>
-        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',${p.step || 0.5})">+</button>
+        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',${p.step || 1})">+</button>
       </div></div>
     </div>`;
   }).join("");
