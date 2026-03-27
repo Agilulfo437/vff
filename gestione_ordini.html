@@ -50,8 +50,8 @@ input:focus,select:focus{border-color:var(--g);}
 .btn-red{background:var(--redl);color:var(--red);border-color:#f0c0b8;}
 .btn-excel{background:#e8f5e0;color:#2d6b20;border-color:#b8d8a8;}
 .btn:disabled{opacity:.45;cursor:not-allowed;}
-.ph{display:grid;grid-template-columns:1fr 86px 74px 48px 28px;gap:6px;font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;padding:0 1px;}
-.pr{display:grid;grid-template-columns:1fr 86px 74px 48px 28px;gap:6px;align-items:center;margin-bottom:7px;}
+.ph{display:grid;grid-template-columns:1fr 1fr 86px 74px 48px 28px;gap:6px;font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;padding:0 1px;}
+.pr{display:grid;grid-template-columns:1fr 1fr 86px 74px 48px 28px;gap:6px;align-items:center;margin-bottom:7px;}
 .pr input,.pr select{padding:8px 9px;font-size:13px;}
 .mv{display:flex;gap:2px;justify-content:center;}
 .mv button{background:none;border:1px solid var(--b);border-radius:4px;cursor:pointer;color:var(--tm);font-size:14px;padding:3px 6px;line-height:1;font-family:inherit;}
@@ -163,7 +163,7 @@ body,html{background:#fff;}
       <input type="text" id="week-input" placeholder="es. Giovedì 19 marzo – Mercoledì 25 marzo"
         oninput="updateWA()" style="font-size:13px;"/>
     </div>
-    <div class="ph"><span>Prodotto</span><span>Prezzo €</span><span>Unità</span><span>Ordine</span><span></span></div>
+    <div class="ph"><span>Prodotto</span><span>Descrizione</span><span>Prezzo €</span><span>Unità</span><span>Ordine</span><span></span></div>
     <div id="pl"></div>
     <button class="addbtn" onclick="addProd()">+ Aggiungi prodotto</button>
     <button class="btn btn-g btn-full" id="save-btn" onclick="saveProds()">
@@ -177,7 +177,7 @@ body,html{background:#fff;}
     </div>
   </div>
   <div class="wa">
-    <div class="walbl">📱 Messaggio WhatsApp — copia e invia ai clienti</div>
+    <div class="walbl" id="walbl">📱 Messaggio WhatsApp — copia e invia ai clienti</div>
     <div class="watxt" id="watxt"></div>
   </div>
   <button class="btn btn-full no-print" onclick="copyWA()" style="margin-bottom:6px;">
@@ -253,10 +253,12 @@ const PUBLISH_RETRY_DELAY = 2000;
 const DAYS = {
   lunedi:    { label: "Lunedì",    link: "https://verdurafelice.it/ordine_consegna_lunedi.html",    active: false },
   martedi:   { label: "Martedì",   link: "https://verdurafelice.it/ordine_consegna_martedi.html",   active: false },
-  mercoledi: { label: "Mercoledì", link: "https://verdurafelice.it/ordine_consegna_mercoledi.html", active: true  },
+  mercoledi: { label: "Mercoledì", link: "https://verdurafelice.it/ordine_consegna_mercoledi.html", active: true,
+    consegnaDow: 3, consegnaLuogo: "presso la Fratelli Carli", deadlineDow: 2, deadlineOra: "23:00", invioLabel: "ogni lunedì" },
   giovedi:   { label: "Giovedì",   link: "https://verdurafelice.it/ordine_consegna_giovedi.html",   active: false },
   venerdi:   { label: "Venerdì",   link: "https://verdurafelice.it/ordine_consegna_venerdi.html",   active: false },
-  sabato:    { label: "Sabato",    link: "https://verdurafelice.it/ordine_consegna_sabato.html",    active: true  },
+  sabato:    { label: "Sabato",    link: "https://verdurafelice.it/ordine_consegna_sabato.html",    active: true,
+    consegnaDow: 6, consegnaLuogo: "al mercato di Imperia Oneglia", deadlineDow: 5, deadlineOra: "14:00", invioLabel: "ogni giovedì" },
 };
 let currentDay = "sabato";  // active day, changes when user clicks day bar
 // ─────────────────────────────────────────────────────────────────────────────
@@ -548,9 +550,11 @@ function renderProds() {
     <div class="pr">
       <input type="text" value="${esc(p.n)}" placeholder="Nome prodotto"
         oninput="prods[${i}].n=this.value;updateWA()"/>
+      <input type="text" value="${esc(p.desc || '')}" placeholder="Descrizione (opzionale)" style="font-size:12px;color:var(--tm);"
+        oninput="prods[${i}].desc=this.value"/>
       <input type="number" value="${p.p}" step="0.10" min="0" style="text-align:right;"
         oninput="prods[${i}].p=parseFloat(this.value)||0;updateWA()"/>
-      <select onchange="prods[${i}].u=this.value;updateWA()">
+      <select onchange="prods[${i}].u=this.value;prods[${i}].step=stepForUnit(this.value);updateWA()">
         ${UNITS.map(u => `<option${p.u === u ? " selected" : ""}>${u}</option>`).join("")}
       </select>
       <div class="mv">
@@ -561,9 +565,14 @@ function renderProds() {
     </div>`).join("");
 }
 
+/** Returns sensible default step for a given unit */
+function stepForUnit(u) {
+  return ["kg","etti"].includes(u) ? 0.5 : 1;
+}
+
 function addProd() {
-  nextId++;  // [FIX 5] uses timestamp-based ID, never collides
-  prods.push({ id: "p" + nextId, n: "", p: 0, u: "kg", step: 0.5 });
+  nextId++;
+  prods.push({ id: "p" + nextId, n: "", p: 0, u: "kg", step: 0.5, desc: "" });
   renderProds();
   const inputs = document.querySelectorAll(".pr input[type=text]");
   if (inputs.length) inputs[inputs.length - 1].focus();
@@ -640,15 +649,35 @@ async function saveProds() {
 
 function updateWA() {
   const week = getCurrentWeek();
-  const link = DAYS[currentDay]?.link || "";
-  const dayLabel = DAYS[currentDay]?.label || currentDay;
+  const d = DAYS[currentDay] || {};
+  const link = d.link || "";
   const lines = prods.filter(p => p.n.trim())
     .map(p => `• ${p.n}  €${Number(p.p).toFixed(2)}/${p.u}`).join("\n");
+
+  // Dynamic dates
+  const consegnaDate = d.consegnaDow != null ? getNextDow(d.consegnaDow) : "";
+  const deadlineDate = d.deadlineDow != null ? getNextDow(d.deadlineDow) : "";
+  const consegnaStr = consegnaDate ? `, con consegna ${d.consegnaLuogo} ${consegnaDate}` : "";
+  const deadlineStr = deadlineDate ? ` (entro ${deadlineDate} ore ${d.deadlineOra})` : "";
+
+  // Update label
+  document.getElementById("walbl").textContent = `📱 Messaggio WhatsApp — copia e invia ${d.invioLabel || "ai clienti"}`;
+
   document.getElementById("watxt").textContent =
-    `Ciao! 🌿\nEcco i prodotti disponibili questa settimana — consegna ${dayLabel}:\n\n` +
+    `Ciao! 🌿\nEcco i prodotti disponibili questa settimana${consegnaStr}:\n\n` +
     `${lines || "(nessun prodotto)"}\n\n` +
-    `🛒 Per ordinare:\n${link}\n\n` +
+    `🛒 Per ordinare${deadlineStr}:\n${link}\n\n` +
     `Buona settimana! — Verdura Felice Biodinamica`;
+}
+
+/** Get next occurrence of a day-of-week (0=Sun..6=Sat), formatted in Italian */
+function getNextDow(targetDow) {
+  const now = new Date();
+  let diff = (targetDow - now.getDay() + 7) % 7;
+  if (diff === 0) diff = 7;
+  const d = new Date(now);
+  d.setDate(now.getDate() + diff);
+  return formatDateIT(d).toLowerCase();
 }
 
 function copyWA() {
