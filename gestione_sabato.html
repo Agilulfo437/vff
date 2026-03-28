@@ -354,7 +354,9 @@ function init() {
       if (rows.length) {
         const c = rows[0];
         prods = (c.prodotti && c.prodotti.length) ? c.prodotti : [];
-        setWeekUI(c.settimana || getNextSaturdayWeek(), today);
+        const week = (c.settimana && c.settimana.toLowerCase().startsWith("sabato"))
+          ? c.settimana : getNextSaturdayWeek();
+        setWeekUI(week, today);
         mostraChiudiBox(!!c.aperto);
       } else {
         caricaDefault(today);
