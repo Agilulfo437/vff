@@ -348,6 +348,7 @@ function clearSavedCustomer() {
   document.getElementById("cname").value = "";
   document.getElementById("ctel").value  = "";
   document.getElementById("wb-banner").style.display = "none";
+  document.getElementById("last-order").style.display = "none";
   document.getElementById("cname").focus();
   refreshSum();
 }
@@ -434,7 +435,7 @@ async function init() {
 
     PRODUCTS  = cfg.prodotti || [];
     settimana = cfg.settimana || getNextSaturdayLabel();
-    document.getElementById("sec-week").textContent = "Prodotti disponibili — " + settimana;
+    document.getElementById("sec-week").textContent = "Prodotti disponibili";
 
     if (!PRODUCTS.length) {
       document.getElementById("neterr-msg").textContent = "Nessun prodotto disponibile al momento. Riprova più tardi.";
