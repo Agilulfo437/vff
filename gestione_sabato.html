@@ -635,6 +635,38 @@ async function exportExcel() {
   const ws3 = XLSX.utils.aoa_to_sheet(mRows);
   ws3["!cols"] = [{wch:22},{wch:28},...mProds.map(()=>({wch:14})),{wch:10}];
   XLSX.utils.book_append_sheet(wb, ws3, "Matrice");
+
+  // ─── Foglio 4: Storico ordini ───
+  // TUTTI gli ordini archiviati e correnti, di tutti i giorni e di tutti gli anni.
+  // L'utente filtra/pivota in Excel come preferisce.
+  let storico = [];
+  try {
+    const res = await fetchWithTimeout(
+      sbUrl("ordini", "order=timestamp.asc"),
+      { headers: sbHeaders(SUPABASE_SERVICE_KEY) }
+    );
+    if (res.ok) storico = await res.json();
+  } catch (e) { /* network error, skip storico */ }
+
+  if (storico.length) {
+    const sRows = [["Anno","Giorno","Settimana","Data ordine","Cliente","Telefono","Prodotto","Qtà","Unità","Prezzo €","Subtotale €","Note"]];
+    storico.forEach(o => {
+      const ts = o["timestamp"] ? new Date(o["timestamp"]) : null;
+      const tsStr = ts ? ts.toLocaleString("it-IT") : "";
+      const anno = ts ? ts.getFullYear() : "";
+      parseOrderProducts(o).forEach(p => {
+        sRows.push([anno, o["giorno"]||"", o["settimana"]||"", tsStr, o["cliente"]||"", getOrderTel(o), p.nome, p.qty, p.unit, p.prezzo, p.subtotale, o["note"]||""]);
+      });
+    });
+    const ws4 = XLSX.utils.aoa_to_sheet(sRows);
+    ws4["!cols"] = [{wch:7},{wch:11},{wch:22},{wch:16},{wch:18},{wch:14},{wch:26},{wch:7},{wch:10},{wch:10},{wch:12},{wch:24}];
+    XLSX.utils.book_append_sheet(wb, ws4, "Storico ordini");
+  } else {
+    // Foglio vuoto con header per non confondere Valeria al primo export
+    const ws4 = XLSX.utils.aoa_to_sheet([["Anno","Giorno","Settimana","Data ordine","Cliente","Telefono","Prodotto","Qtà","Unità","Prezzo €","Subtotale €","Note"], ["(nessun ordine in archivio)"]]);
+    XLSX.utils.book_append_sheet(wb, ws4, "Storico ordini");
+  }
+
   XLSX.writeFile(wb, `VFF_sabato_${week.replace(/[^a-zA-Z0-9]/g,"_")}.xlsx`);
 }
 
