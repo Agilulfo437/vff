@@ -141,7 +141,7 @@ body,html{background:#fff;}
   <div style="height:13px;"></div>
   <div id="pmsg"></div>
   <div class="card">
-    <h2>Lista prodotti della settimana</h2>
+    <h2>Lista prodotti — consegna <span id="h2-data-lista"></span></h2>
     <input type="hidden" id="week-input"/>
     <div class="ph"><span>Prodotto</span><span>Prezzo €</span><span>Unità</span><span>Ordine</span><span></span></div>
     <div id="pl"></div>
@@ -188,7 +188,7 @@ body,html{background:#fff;}
     <div class="sbox"><div class="sv" id="s-t">—</div><div class="sl">Totale €</div></div>
   </div>
   <div class="card">
-    <h2>Totale prodotti da raccogliere</h2>
+    <h2>Totale prodotti da raccogliere per <span id="h2-data-totale"></span></h2>
     <div class="tblwrap">
       <table class="tbl">
         <thead><tr><th>Prodotto</th><th>Qtà totale</th><th>Unità</th><th style="text-align:right">Ricavo</th></tr></thead>
@@ -372,6 +372,10 @@ function init() {
 function setWeekUI(week, today) {
   document.getElementById("week-input").value = week;
   document.getElementById("print-meta").textContent = week + " · Stampato il " + today;
+  // Versione abbreviata per gli h2 (es. "sabato 23 maggio" da "Sabato 23 maggio 2026")
+  const shortDate = week.toLowerCase().replace(/\s+\d{4}\s*$/, "");
+  document.getElementById("h2-data-lista").textContent = shortDate;
+  document.getElementById("h2-data-totale").textContent = shortDate;
 }
 function caricaDefault(today) {
   try { const s = localStorage.getItem("vff_prods_sabato"); prods = s ? JSON.parse(s) : []; }
