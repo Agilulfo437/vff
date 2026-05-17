@@ -303,6 +303,26 @@ function getNextSaturday() {
   sat.setHours(0, 0, 0, 0);
   return sat;
 }
+// Parsa un label tipo "Sabato 23 maggio 2026" e ritorna un Date, o null se non parsabile.
+const ITA_MONTHS = {gennaio:0,febbraio:1,marzo:2,aprile:3,maggio:4,giugno:5,luglio:6,agosto:7,settembre:8,ottobre:9,novembre:10,dicembre:11};
+function parseItalianSaturdayLabel(label) {
+  if (!label) return null;
+  const m = label.toLowerCase().match(/sabato\s+(\d{1,2})\s+([a-zà-ù]+)(?:\s+(\d{4}))?/);
+  if (!m) return null;
+  const day = parseInt(m[1], 10);
+  const month = ITA_MONTHS[m[2]];
+  if (month === undefined) return null;
+  const year = m[3] ? parseInt(m[3], 10) : new Date().getFullYear();
+  return new Date(year, month, day);
+}
+// Una settimana DB è valida se inizia con "sabato" E la data è di oggi o nel futuro.
+function isValidSaturdayWeek(label) {
+  const d = parseItalianSaturdayLabel(label);
+  if (!d) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return d >= today;
+}
 function getNextSaturdayLabel() {
   const sat = getNextSaturday();
   return sat.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
@@ -357,8 +377,7 @@ function init() {
       if (rows.length) {
         const c = rows[0];
         prods = (c.prodotti && c.prodotti.length) ? c.prodotti : [];
-        const week = (c.settimana && c.settimana.toLowerCase().startsWith("sabato"))
-          ? c.settimana : getNextSaturdayWeek();
+        const week = isValidSaturdayWeek(c.settimana) ? c.settimana : getNextSaturdayWeek();
         setWeekUI(week, today);
         mostraChiudiBox(!!c.aperto);
       } else {
@@ -427,12 +446,17 @@ function renderProds() {
 }
 function addProd() {
   nextId++;
-  prods.push({ id: "p" + nextId, n: "", p: 0, u: "kg", step: 0.5 });
+  prods.push({ id: "p" + nextId, n: "", p: 0, u: "kg", step: stepForUnit("kg") });
   renderProds();
   const inputs = document.querySelectorAll(".pr input[type=text]");
   if (inputs.length) inputs[inputs.length - 1].focus();
 }
-function delProd(i) { prods.splice(i, 1); renderProds(); updateWA(); }
+function delProd(i) {
+  const p = prods[i];
+  // Conferma solo se il prodotto ha un nome (riga vuota: elimina subito senza chiedere)
+  if (p && p.n && p.n.trim() && !confirm(`Eliminare "${p.n}" dalla lista?`)) return;
+  prods.splice(i, 1); renderProds(); updateWA();
+}
 function moveProd(i, dir) {
   const j = i + dir;
   if (j < 0 || j >= prods.length) return;
@@ -442,6 +466,12 @@ function moveProd(i, dir) {
 
 // ─── SAVE & PUBLISH ───────────────────────────────────────────────────────────
 async function saveProds() {
+  // Validazione: avverti se ci sono prodotti con prezzo non valido
+  const noPrice = prods.filter(p => p.n.trim() && (!p.p || p.p <= 0));
+  if (noPrice.length) {
+    const names = noPrice.map(p => `• ${p.n}`).join("\n");
+    if (!confirm(`Attenzione: questi prodotti hanno prezzo €0:\n\n${names}\n\nPubblicare comunque?`)) return;
+  }
   const btn = document.getElementById("save-btn");
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span>Pubblicazione...';

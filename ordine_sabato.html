@@ -297,6 +297,27 @@ function getNextSaturday() {
   return sat;
 }
 
+// Parsa un label tipo "Sabato 23 maggio 2026" e ritorna un Date, o null se non parsabile.
+const ITA_MONTHS = {gennaio:0,febbraio:1,marzo:2,aprile:3,maggio:4,giugno:5,luglio:6,agosto:7,settembre:8,ottobre:9,novembre:10,dicembre:11};
+function parseItalianSaturdayLabel(label) {
+  if (!label) return null;
+  const m = label.toLowerCase().match(/sabato\s+(\d{1,2})\s+([a-zà-ù]+)(?:\s+(\d{4}))?/);
+  if (!m) return null;
+  const day = parseInt(m[1], 10);
+  const month = ITA_MONTHS[m[2]];
+  if (month === undefined) return null;
+  const year = m[3] ? parseInt(m[3], 10) : new Date().getFullYear();
+  return new Date(year, month, day);
+}
+// Una settimana DB è valida se inizia con "sabato" E la data è di oggi o nel futuro.
+function isValidSaturdayWeek(label) {
+  const d = parseItalianSaturdayLabel(label);
+  if (!d) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return d >= today;
+}
+
 /** "Consegna sabato 4 aprile" */
 function getNextSaturdayLabel() {
   const sat = getNextSaturday();
@@ -441,10 +462,7 @@ async function init() {
     }
 
     PRODUCTS  = cfg.prodotti || [];
-    // Guard: se il valore in DB non è una settimana "sabato ..." (es. dato vecchio "giovedì..."),
-    // ricalcoliamo il prossimo sabato per non mostrare al cliente una data obsoleta.
-    settimana = (cfg.settimana && cfg.settimana.toLowerCase().startsWith("sabato"))
-      ? cfg.settimana : getNextSaturdayLabel();
+    settimana = isValidSaturdayWeek(cfg.settimana) ? cfg.settimana : getNextSaturdayLabel();
     document.getElementById("sec-week").textContent = "Prodotti disponibili";
 
     if (!PRODUCTS.length) {
@@ -531,8 +549,10 @@ function goConfirm() {
 
   if (!ok) {
     const eb = document.getElementById("errbox");
-    eb.textContent = !name ? "Inserisci il tuo nome per continuare."
-      : `Inserisci un numero di telefono valido (${PHONE_MIN_DIGITS}-${PHONE_MAX_DIGITS} cifre).`;
+    const problems = [];
+    if (!name) problems.push("inserisci il tuo nome");
+    if (!telOk) problems.push(`inserisci un numero di telefono valido (${PHONE_MIN_DIGITS}-${PHONE_MAX_DIGITS} cifre)`);
+    eb.textContent = "Per continuare: " + problems.join(" e ") + ".";
     eb.style.display = "block";
     return;
   }
@@ -580,7 +600,7 @@ async function doSubmit() {
       method: "POST",
       headers: { ...sbHeaders(SUPABASE_ANON_KEY), "Prefer": "return=minimal" },
       body: JSON.stringify({
-        id: orderId, cliente: name, telefono: tel,
+        id: orderId, cliente: name, telefono: tel.replace(/[\s\-\+]/g, ""),
         prodotti_dettaglio: (window._rows || []).join("\n"),
         totale: parseFloat((window._total || 0).toFixed(2)),
         note: notes || null, settimana: settimana, giorno: CONFIG_ID
