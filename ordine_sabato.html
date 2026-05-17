@@ -338,7 +338,8 @@ function prefillCustomer() {
       refreshSum();
     }
   } catch (e) {}
-  showLastOrder();
+  // showLastOrder() viene chiamata da init() dopo che `settimana` è stata caricata,
+  // così possiamo confrontare la settimana salvata con quella attuale.
 }
 function saveCustomer(name, tel) {
   try { localStorage.setItem(LS_KEY_NAME, name); localStorage.setItem(LS_KEY_TEL, tel); } catch (e) {}
@@ -381,6 +382,9 @@ function showLastOrder() {
     if (!raw) return;
     const order = JSON.parse(raw);
     if (!order || !order.prodotti || !order.prodotti.length) return;
+    // Mostra il banner SOLO se la settimana salvata coincide con quella corrente.
+    // Altrimenti l'ordine è vecchio: lo lasciamo in localStorage ma non lo mostriamo.
+    if (!order.settimana || order.settimana !== settimana) return;
     document.getElementById("lo-meta").textContent = (order.settimana || "") + " · " + (order.data || "");
     document.getElementById("lo-lines").innerHTML = buildOrderLines(order.prodotti);
     document.getElementById("lo-total").textContent = "Totale indicativo: €" + Number(order.totale).toFixed(2);
@@ -390,6 +394,9 @@ function showLastOrder() {
 
 // ─── TIME GATE ────────────────────────────────────────────────────────────────
 function isOutsideOrderWindow() {
+  // Bypass per test: ?test=1 nell'URL salta il gate temporale.
+  // Non bypassa il flag `aperto` del DB, quindi è sicuro lasciarlo in produzione.
+  if (new URLSearchParams(location.search).get("test") === "1") return false;
   const now = new Date();
   const day = now.getDay();
   const h = now.getHours(), m = now.getMinutes();
@@ -434,7 +441,10 @@ async function init() {
     }
 
     PRODUCTS  = cfg.prodotti || [];
-    settimana = cfg.settimana || getNextSaturdayLabel();
+    // Guard: se il valore in DB non è una settimana "sabato ..." (es. dato vecchio "giovedì..."),
+    // ricalcoliamo il prossimo sabato per non mostrare al cliente una data obsoleta.
+    settimana = (cfg.settimana && cfg.settimana.toLowerCase().startsWith("sabato"))
+      ? cfg.settimana : getNextSaturdayLabel();
     document.getElementById("sec-week").textContent = "Prodotti disponibili";
 
     if (!PRODUCTS.length) {
@@ -446,6 +456,7 @@ async function init() {
     renderProducts();
     showState("form");
     prefillCustomer();
+    showLastOrder();
   } catch (e) {
     document.getElementById("neterr-msg").textContent = e.name === "AbortError"
       ? "Il server non risponde. Controlla la connessione e riprova."

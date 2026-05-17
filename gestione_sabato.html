@@ -224,6 +224,9 @@ const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 const CONFIG_ID        = "sabato";
 const LINK_ORDINE      = "https://verdurafelice.it/ordine_sabato.html";
 const UNITS            = ["kg","etti","cad","mazzo","busta","cassetta","pz","litro","vaschetta"];
+// Step di default per unità: 1 per items contati, 0.5 per pesi/volumi
+const UNITS_STEP_ONE   = ["cad","mazzo","busta","cassetta","pz","vaschetta"];
+function stepForUnit(u) { return UNITS_STEP_ONE.includes(u) ? 1 : 0.5; }
 const XLSX_CDN         = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
 const FETCH_TIMEOUT_MS = 15000;
 // ─────────────────────────────────────────────────────────────────────────────
@@ -408,7 +411,7 @@ function renderProds() {
     <div class="pr">
       <input type="text" value="${esc(p.n)}" placeholder="Nome prodotto" oninput="prods[${i}].n=this.value;updateWA()"/>
       <input type="number" value="${p.p}" step="0.10" min="0" style="text-align:right;" oninput="prods[${i}].p=parseFloat(this.value)||0;updateWA()"/>
-      <select onchange="prods[${i}].u=this.value;updateWA()">
+      <select onchange="prods[${i}].u=this.value;prods[${i}].step=stepForUnit(this.value);updateWA()">
         ${UNITS.map(u => `<option${p.u === u ? " selected" : ""}>${u}</option>`).join("")}
       </select>
       <div class="mv">
