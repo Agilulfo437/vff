@@ -495,7 +495,7 @@ function updateWA() {
   const { fri, sat } = getNextFridaySaturday();
   const lines = prods.filter(p => p.n.trim()).map(p => `• ${p.n}  €${Number(p.p).toFixed(2)}/${p.u}`).join("\n");
   document.getElementById("watxt").textContent =
-    `Ciao! 🌿\nEcco i prodotti disponibili questa settimana, con possibilità di ritiro in azienda il venerdì o il sabato mattina, oppure consegna al mercato di Imperia Oneglia sabato ${sat}:\n\n` +
+    `Ciao! 🌿\nEcco i prodotti disponibili questa settimana, con possibilità di ritiro in azienda il venerdì pomeriggio o il sabato mattina, oppure consegna al mercato di Imperia Oneglia sabato ${sat}:\n\n` +
     `${lines || "(nessun prodotto)"}\n\n` +
     `🛒 Per ordinare (entro venerdì ${fri} ore 14:00):\n${LINK_ORDINE}\n\nBuona settimana! — Verdura Felice Biodinamica`;
 }
