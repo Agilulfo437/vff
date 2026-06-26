@@ -219,10 +219,13 @@ body,html{background:#fff;}
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const PASSWORD         = "frutta2025";
+// NESSUNA chiave segreta in questo file. Le operazioni admin passano dalla
+// Edge Function, che tiene la secret key lato server e verifica la password.
 const SUPABASE_URL     = "https://ojzojxpncbapqheiaitm.supabase.co";
-const SUPABASE_ANON_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qem9qeHBuY2JhcHFoZWlhaXRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Nzc1MzksImV4cCI6MjA5MDA1MzUzOX0.YyKcZ11oW43umbzmL0mn2-qaeIEIIlD96UgVf2iOe7w";
-const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qem9qeHBuY2JhcHFoZWlhaXRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDQ3NzUzOSwiZXhwIjoyMDkwMDUzNTM5fQ.Uam1_vjix-P9bBGBohl50_IkSy9pZxiyTrYM5PXcbJw";
+// Chiave pubblica: usata SOLO per leggere la lista prodotti (config) all'avvio.
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_WWRxn3WLUOcBB36Mh-a3Qg_REICiiQ5";
+// Edge Function che esegue tutte le operazioni privilegiate (leggi/scrivi/elimina ordini).
+const EDGE_FN_URL      = "https://ojzojxpncbapqheiaitm.supabase.co/functions/v1/admin";
 const CONFIG_ID        = "mercoledi";
 const LINK_ORDINE      = "https://verdurafelice.it/ordine_mercoledi.html";
 const UNITS            = ["kg","etti","cad","mazzo","busta","cassetta","pz","litro","vaschetta"];
@@ -236,10 +239,38 @@ const DEADLINE_MINUTE  = 15;
 // ─────────────────────────────────────────────────────────────────────────────
 
 function sbHeaders(key) {
-  return { "Content-Type": "application/json", "apikey": key, "Authorization": "Bearer " + key };
+  // Chiavi nuove: solo apikey, mai Authorization Bearer.
+  return { "Content-Type": "application/json", "apikey": key };
 }
 function sbUrl(table, params) {
   return SUPABASE_URL + "/rest/v1/" + table + (params ? "?" + params : "");
+}
+
+// ─── EDGE FUNCTION (operazioni privilegiate) ──────────────────────────────────
+function getAdminPwd() { return sessionStorage.getItem("vff_admin_pwd") || ""; }
+
+/** Chiama la Edge Function admin. Manda password + giorno + azione.
+ *  Ritorna l'oggetto JSON { ok, ... } oppure lancia un Error con messaggio leggibile. */
+async function callAdmin(action, payload) {
+  let res, data;
+  try {
+    res = await fetchWithTimeout(EDGE_FN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: getAdminPwd(), giorno: CONFIG_ID, action, ...(payload || {}) })
+    });
+  } catch (e) {
+    throw new Error(e.name === "AbortError" ? "Il server non risponde." : "Errore di rete: " + e.message);
+  }
+  data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    // Password non più valida → forza nuovo login
+    sessionStorage.removeItem("vff_auth_mercoledi");
+    sessionStorage.removeItem("vff_admin_pwd");
+    throw new Error("Sessione scaduta o password errata. Ricarica la pagina e rientra.");
+  }
+  if (!res.ok || !data.ok) throw new Error(data.error || ("Errore server " + res.status));
+  return data;
 }
 
 let prods = [], cfg = {}, orders = [];
@@ -355,18 +386,36 @@ function getCurrentWeek() {
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
-function checkPwd() {
-  if (document.getElementById("pwd-input").value === PASSWORD) {
-    sessionStorage.setItem("vff_auth_mercoledi", "1");
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("app").style.display = "block";
-  } else {
-    const e = document.getElementById("login-err");
-    e.textContent = "Password errata. Riprova.";
-    document.getElementById("pwd-input").value = "";
-    document.getElementById("pwd-input").focus();
-    setTimeout(() => e.textContent = "", 3000);
+async function checkPwd() {
+  const pwd = document.getElementById("pwd-input").value;
+  const errEl = document.getElementById("login-err");
+  const btn = document.querySelector(".login-btn");
+  errEl.textContent = "Verifica...";
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetchWithTimeout(EDGE_FN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pwd, giorno: CONFIG_ID, action: "ping" })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) {
+      sessionStorage.setItem("vff_admin_pwd", pwd);
+      sessionStorage.setItem("vff_auth_mercoledi", "1");
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      errEl.textContent = "";
+    } else {
+      errEl.textContent = "Password errata. Riprova.";
+      document.getElementById("pwd-input").value = "";
+      document.getElementById("pwd-input").focus();
+      setTimeout(() => errEl.textContent = "", 3000);
+    }
+  } catch (e) {
+    errEl.textContent = "Errore di connessione. Riprova.";
+    setTimeout(() => errEl.textContent = "", 3000);
   }
+  if (btn) btn.disabled = false;
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
@@ -381,7 +430,7 @@ function init() {
 
   fetchWithTimeout(
     sbUrl("config", "id=eq." + CONFIG_ID + "&select=*"),
-    { headers: sbHeaders(SUPABASE_ANON_KEY) }
+    { headers: sbHeaders(SUPABASE_PUBLISHABLE_KEY) }
   )
     .then(r => r.json())
     .then(rows => {
@@ -422,11 +471,10 @@ async function chiudiOrdini() {
   const btn = document.querySelector("#chiudi-box button");
   btn.disabled = true;
   try {
-    const res = await fetchWithTimeout(sbUrl("config", "id=eq." + CONFIG_ID),
-      { method: "PATCH", headers: sbHeaders(SUPABASE_SERVICE_KEY), body: JSON.stringify({ aperto: false }) });
-    if (res.ok) { mostraChiudiBox(false); showMsg("pmsg", "ok", "✓ Ordini chiusi — nessun nuovo ordine in entrata."); }
-    else { const err = await res.json().catch(() => ({})); showMsg("pmsg", "err", "Errore: " + (err.message || "Risposta non valida.")); }
-  } catch (e) { showMsg("pmsg", "err", e.name === "AbortError" ? "Il server non risponde." : "Errore di rete: " + e.message); }
+    await callAdmin("closeOrders");
+    mostraChiudiBox(false);
+    showMsg("pmsg", "ok", "✓ Ordini chiusi — nessun nuovo ordine in entrata.");
+  } catch (e) { showMsg("pmsg", "err", "Errore: " + e.message); }
   btn.disabled = false;
 }
 
@@ -488,14 +536,11 @@ async function saveProds() {
   btn.innerHTML = '<span class="spin"></span>Pubblicazione...';
   localStorage.setItem("vff_prods_mercoledi", JSON.stringify(prods));
   try {
-    const res = await fetchWithTimeout(sbUrl("config", "id=eq." + CONFIG_ID), {
-      method: "PATCH", headers: sbHeaders(SUPABASE_SERVICE_KEY),
-      body: JSON.stringify({ shop: "Verdura e Frutta Felice", settimana: getCurrentWeek(), prodotti: prods.filter(p => p.n.trim()), aperto: true })
-    });
-    if (res.ok) { showMsg("pmsg", "ok", "✓ Lista pubblicata! I clienti vedono già i prodotti aggiornati."); mostraChiudiBox(true); }
-    else { const err = await res.json().catch(() => ({})); showMsg("pmsg", "err", "Errore dal server: " + (err.message || "Risposta non valida.")); }
+    await callAdmin("saveConfig", { settimana: getCurrentWeek(), prodotti: prods.filter(p => p.n.trim()) });
+    showMsg("pmsg", "ok", "✓ Lista pubblicata! I clienti vedono già i prodotti aggiornati.");
+    mostraChiudiBox(true);
   } catch (e) {
-    showMsg("pmsg", "err", e.name === "AbortError" ? "Il server non risponde. Lista salvata in locale ma non pubblicata." : "Errore di rete. Lista salvata in locale ma non pubblicata.");
+    showMsg("pmsg", "err", "Lista salvata in locale ma non pubblicata. " + e.message);
   }
   btn.disabled = false;
   btn.textContent = "Salva e pubblica lista";
@@ -521,15 +566,11 @@ async function loadOrders() {
   document.getElementById("tb-prod").innerHTML = '<tr><td colspan="4" class="riepilogo-loading"><div class="spin"></div>Caricamento ordini...</td></tr>';
   document.getElementById("tb-orders").innerHTML = '<tr><td colspan="6" class="riepilogo-loading"><div class="spin"></div>Caricamento...</td></tr>';
   try {
-    const res = await fetchWithTimeout(
-      sbUrl("ordini", "archiviato=eq.false&giorno=eq." + CONFIG_ID + "&order=timestamp.desc"),
-      { headers: sbHeaders(SUPABASE_SERVICE_KEY) }
-    );
-    if (!res.ok) throw new Error("Errore server: " + res.status);
-    orders = await res.json();
+    const data = await callAdmin("getOrders");
+    orders = data.orders || [];
     renderOrders(orders);
   } catch (e) {
-    const msg = e.name === "AbortError" ? "Il server non risponde." : e.message;
+    const msg = e.message;
     document.getElementById("tb-prod").innerHTML = `<tr><td colspan="4" class="empty" style="color:var(--red)">Errore: ${esc(msg)}</td></tr>`;
     document.getElementById("tb-orders").innerHTML = `<tr><td colspan="6" class="empty" style="color:var(--red)">Errore: ${esc(msg)}</td></tr>`;
   }
@@ -597,27 +638,23 @@ async function deleteOrder(i) {
   const removed = orders.splice(i, 1)[0];
   renderOrders(orders);
   try {
-    const res = await fetchWithTimeout(sbUrl("ordini", "id=eq." + encodeURIComponent(String(o["id"]))),
-      { method: "DELETE", headers: sbHeaders(SUPABASE_SERVICE_KEY) });
-    if (!res.ok) { orders.splice(i, 0, removed); renderOrders(orders); showMsg("pmsg", "err", "Errore dal server. Ordine ripristinato."); }
-  } catch (e) { orders.splice(i, 0, removed); renderOrders(orders); showMsg("pmsg", "err", "Errore rete — ordine ripristinato."); }
+    await callAdmin("deleteOrder", { id: String(o["id"]) });
+  } catch (e) {
+    orders.splice(i, 0, removed); renderOrders(orders);
+    showMsg("pmsg", "err", "Ordine ripristinato. " + e.message);
+  }
 }
 
 async function clearAllOrders() {
   if (!confirm("Archiviare TUTTI gli ordini della settimana?\n\nAssicurati di aver già stampato il riepilogo.")) return;
   if (!confirm("Sei sicuro? Gli ordini verranno archiviati.")) return;
   try {
-    const res = await fetchWithTimeout(sbUrl("ordini", "archiviato=eq.false&giorno=eq." + CONFIG_ID),
-      { method: "PATCH", headers: sbHeaders(SUPABASE_SERVICE_KEY), body: JSON.stringify({ archiviato: true }) });
-    if (res.ok) {
-      await fetchWithTimeout(sbUrl("config", "id=eq." + CONFIG_ID),
-        { method: "PATCH", headers: sbHeaders(SUPABASE_SERVICE_KEY), body: JSON.stringify({ aperto: false }) });
-      orders = []; renderOrders([]); mostraChiudiBox(false);
-      const today = new Date().toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
-      setWeekUI(getNextWednesdayWeek(), today);
-      showMsg("pmsg", "ok", "✓ Ordini archiviati. Pronto per la nuova settimana!");
-    } else { const err = await res.json().catch(() => ({})); showMsg("pmsg", "err", "Errore: " + (err.message || "")); }
-  } catch (e) { showMsg("pmsg", "err", "Errore di rete: " + (e.name === "AbortError" ? "Il server non risponde." : e.message)); }
+    await callAdmin("archiveWeek");
+    orders = []; renderOrders([]); mostraChiudiBox(false);
+    const today = new Date().toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+    setWeekUI(getNextWednesdayWeek(), today);
+    showMsg("pmsg", "ok", "✓ Ordini archiviati. Pronto per la nuova settimana!");
+  } catch (e) { showMsg("pmsg", "err", "Errore: " + e.message); }
 }
 
 // ─── EXCEL EXPORT ─────────────────────────────────────────────────────────────
@@ -652,12 +689,9 @@ async function exportExcel() {
   // L'utente filtra/pivota in Excel come preferisce.
   let storico = [];
   try {
-    const res = await fetchWithTimeout(
-      sbUrl("ordini", "order=timestamp.asc"),
-      { headers: sbHeaders(SUPABASE_SERVICE_KEY) }
-    );
-    if (res.ok) storico = await res.json();
-  } catch (e) { /* network error, skip storico */ }
+    const data = await callAdmin("getOrdersAll");
+    storico = data.orders || [];
+  } catch (e) { /* errore rete, salta storico */ }
 
   if (storico.length) {
     const sRows = [["Anno","Giorno","Settimana","Data ordine","Cliente","Telefono","Prodotto","Qtà","Unità","Prezzo €","Subtotale €","Note"]];
