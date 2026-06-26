@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Verdura e Frutta Felice — Ordina</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g:#2d6b47;--gd:#1e4d32;--gl:#eaf4ee;--gm:#74b893;
+  --sand:#f6f3ee;--t:#222;--tm:#7a736a;--b:#ddd8ce;
+  --red:#b03030;--redl:#fdf1f0;--r:13px;--rs:8px;
+}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--sand);color:var(--t);min-height:100vh;}
+header{background:var(--gd);padding:20px 20px 16px;text-align:center;}
+header h1{color:#fff;font-size:19px;font-family:Georgia,serif;font-weight:normal;letter-spacing:.4px;}
+header p{color:rgba(255,255,255,.65);font-size:13px;margin-top:4px;}
+.wpill{display:inline-block;background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);font-size:12px;padding:5px 14px;border-radius:99px;margin-top:10px;}
+.wrap{max-width:480px;margin:0 auto;padding:16px 14px;}
+.card{background:#fff;border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.field-lbl{font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block;}
+input[type=text],input[type=tel],textarea{width:100%;padding:12px 13px;font-size:16px;border:1.5px solid var(--b);border-radius:var(--rs);background:#fff;color:var(--t);outline:none;font-family:inherit;-webkit-appearance:none;}
+input:focus,textarea:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(45,107,71,.1);}
+input.err{border-color:var(--red)!important;}
+textarea{height:68px;resize:none;font-size:14px;}
+.field{margin-bottom:11px;}
+.sec-lbl{font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--b);}
+.pi{background:#fff;border:1.5px solid var(--b);border-radius:var(--r);padding:12px 14px;margin-bottom:9px;display:flex;align-items:center;gap:11px;transition:border-color .12s,background .12s;}
+.pi.on{border-color:var(--g);background:#fafffe;}
+.pinfo{flex:1;min-width:0;}
+.pname{font-size:15px;font-family:Georgia,serif;line-height:1.3;}
+.pprice{font-size:12px;color:var(--tm);margin-top:3px;}
+.qcol{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.qrow{display:flex;align-items:center;gap:7px;}
+.qbtn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--b);background:#fff;font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--g);font-weight:bold;-webkit-tap-highlight-color:transparent;user-select:none;}
+.qbtn:active{background:var(--gl);}
+.qval{min-width:30px;text-align:center;font-size:16px;font-weight:bold;}
+.qunit{font-size:11px;color:var(--tm);}
+.sumbox{background:var(--gl);border:1px solid #b8ddc0;border-radius:var(--r);padding:14px;margin-bottom:13px;}
+.sumtitle{font-size:13px;font-weight:bold;color:var(--gd);margin-bottom:8px;}
+.sumline{font-size:13px;line-height:1.9;color:#2a4f36;}
+.sumtotal{font-size:17px;font-weight:bold;color:var(--gd);margin-top:10px;border-top:1px solid #b8ddc0;padding-top:8px;}
+.sbtn{width:100%;padding:15px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:bold;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;}
+.sbtn:active{opacity:.8;}
+.sbtn:disabled{opacity:.4;cursor:not-allowed;}
+.footnote{font-size:11px;color:var(--tm);text-align:center;margin-top:8px;line-height:1.5;}
+.errbox{background:var(--redl);color:var(--red);border-radius:var(--rs);padding:11px 13px;font-size:13px;margin-bottom:12px;line-height:1.5;}
+/* CONFIRM */
+.confirm-hdr{background:var(--gd);border-radius:var(--r);padding:16px;margin-bottom:14px;text-align:center;}
+.confirm-hdr h2{color:#fff;font-family:Georgia,serif;font-weight:normal;font-size:18px;}
+.confirm-hdr p{color:rgba(255,255,255,.7);font-size:12px;margin-top:5px;}
+.confirm-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--b);}
+.confirm-row:last-child{border-bottom:none;}
+.confirm-row .pn{font-size:14px;}
+.confirm-row .ps{font-size:12px;color:var(--tm);margin-top:2px;}
+.confirm-row .pt{font-weight:bold;font-size:15px;white-space:nowrap;margin-left:12px;}
+.confirm-total{font-size:20px;font-weight:bold;color:var(--gd);margin-top:12px;padding-top:12px;border-top:2px solid var(--gm);}
+.warning-box{background:var(--redl);border:1.5px solid #f0b8b8;border-radius:var(--r);padding:15px 16px;margin-bottom:14px;}
+.warning-box strong{display:block;font-size:14px;color:var(--red);margin-bottom:8px;}
+.warning-box p{font-size:13px;color:var(--red);line-height:1.75;}
+.confirm-btn{width:100%;padding:15px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:bold;cursor:pointer;font-family:inherit;margin-bottom:10px;}
+.confirm-btn:active{opacity:.8;}
+.confirm-btn:disabled{opacity:.4;cursor:not-allowed;}
+.back-btn{width:100%;padding:13px;background:#fff;color:var(--t);border:1px solid var(--b);border-radius:var(--r);font-size:14px;cursor:pointer;font-family:inherit;}
+.back-btn:active{opacity:.75;}
+/* CHIUSO */
+.chiuso{text-align:center;padding:56px 20px;}
+.chiuso-icon{width:72px;height:72px;background:var(--redl);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:36px;}
+.chiuso h2{font-family:Georgia,serif;font-weight:normal;font-size:22px;margin-bottom:10px;color:var(--red);}
+.chiuso p{font-size:14px;color:var(--tm);line-height:1.8;}
+.next-open{display:inline-block;margin-top:16px;background:var(--gl);color:var(--g);padding:10px 20px;border-radius:var(--r);font-size:13px;font-weight:bold;}
+/* SUCCESS */
+.success{text-align:center;padding:56px 20px;}
+.sico{width:68px;height:68px;background:var(--gl);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:32px;}
+.success h2{font-family:Georgia,serif;font-weight:normal;font-size:22px;margin-bottom:10px;}
+.success p{font-size:14px;color:var(--tm);line-height:1.7;}
+.success .final-warn{font-size:12px;color:var(--red);margin-top:14px;padding:11px 14px;background:var(--redl);border-radius:var(--rs);line-height:1.6;}
+/* SATISPAY */
+.satispay-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;max-width:320px;margin:20px auto 0;padding:15px 18px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:bold;font-family:inherit;text-decoration:none;cursor:pointer;box-shadow:0 2px 8px rgba(45,107,71,.25);}
+.satispay-btn:active{opacity:.85;}
+.satispay-hint{font-size:12px;color:var(--tm);margin-top:8px;line-height:1.5;}
+.bonifico-box{max-width:320px;margin:14px auto 0;padding:13px 16px;background:#fff;border:1.5px solid var(--b);border-radius:var(--r);text-align:left;}
+.bonifico-title{font-size:13px;font-weight:bold;color:var(--gd);margin-bottom:8px;text-align:center;}
+.bonifico-row{font-size:13px;color:var(--t);line-height:1.7;}
+.bonifico-row strong{color:var(--gd);}
+.bonifico-iban{font-family:monospace;letter-spacing:.5px;}
+/* LOADING */
+.loading{text-align:center;padding:60px 20px;}
+.spin{width:34px;height:34px;border:3px solid var(--b);border-top-color:var(--g);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 16px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.loading p,.errstate p{font-size:14px;color:var(--tm);}
+.errstate{text-align:center;padding:60px 20px;}
+.retybtn{padding:11px 24px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:14px;cursor:pointer;font-family:inherit;margin-top:12px;}
+footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
+/* Welcome back banner */
+.wb-banner{background:var(--gl);border:1px solid #b8ddc0;border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.wb-banner .wb-text{font-size:13px;color:var(--gd);line-height:1.4;}
+.wb-banner .wb-name{font-weight:bold;}
+.wb-banner .wb-change{font-size:12px;color:var(--g);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:inherit;padding:0;white-space:nowrap;}
+.wb-banner .wb-change:active{opacity:.6;}
+/* Instagram link */
+.ig-link{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:10px 18px;background:#fff;border:1.5px solid #f0c0d0;border-radius:10px;text-decoration:none;}
+.ig-link span{font-size:14px;font-weight:500;color:#c2185b;letter-spacing:0.01em;}
+/* Success recap */
+.success-recap{background:#fff;border:1px solid var(--b);border-radius:var(--r);padding:14px;margin-top:18px;text-align:left;}
+.success-recap .sr-title{font-size:12px;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.success-recap .sr-line{font-size:13px;line-height:1.8;color:var(--t);}
+.success-recap .sr-total{font-size:16px;font-weight:bold;color:var(--gd);margin-top:10px;padding-top:8px;border-top:1px solid var(--b);}
+.success-recap .sr-note{font-size:12px;color:var(--tm);font-style:italic;margin-top:6px;}
+/* Last order banner */
+.last-order{background:#fff;border:1px solid var(--b);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.last-order .lo-title{font-size:12px;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.last-order .lo-meta{font-size:12px;color:var(--tm);margin-bottom:8px;}
+.last-order .lo-line{font-size:13px;line-height:1.8;color:var(--t);}
+.last-order .lo-total{font-size:15px;font-weight:bold;color:var(--gd);margin-top:8px;padding-top:8px;border-top:1px solid var(--b);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 Verdura e Frutta Felice</h1>
+  <p id="header-orario">Consegna <strong style="color:#b8ddc0;">mercoledì dalle ore 17 presso il Laboratolio della Fratelli Carli a Imperia</strong> · Lista disponibile da lunedì · Ordini entro <strong style="color:#b8ddc0;">martedì ore 14:00</strong></p>
+  <!-- Modifica 1: pill mostra "Consegna mercoledì 8 aprile" dinamico -->
+  <div class="wpill" id="wpill" style="display:none;"></div>
+</header>
+
+<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="ig-icon" viewBox="0 0 22 22">
+    <circle cx="11" cy="11" r="11" fill="#fce4ec"/>
+    <rect x="6" y="6" width="10" height="10" rx="3" stroke="#c2185b" stroke-width="1.5" fill="none"/>
+    <circle cx="11" cy="11" r="2.5" stroke="#c2185b" stroke-width="1.5" fill="none"/>
+    <circle cx="14.2" cy="7.8" r="0.8" fill="#c2185b"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+
+  <div id="st-loading" class="loading">
+    <div class="spin"></div>
+    <p>Caricamento prodotti...</p>
+  </div>
+
+  <!-- ORDINI CHIUSI -->
+  <div id="st-chiuso" class="chiuso" style="display:none;">
+    <div class="chiuso-icon">🌿</div>
+    <h2>Ci vediamo la prossima settimana!</h2>
+    <p>Il termine per ordinare è <strong>martedì alle ore 14:00</strong>.<br>
+    La nuova lista per la consegna del mercoledì presso il Laboratolio della Fratelli Carli a Imperia sarà disponibile da:</p>
+    <div class="next-open" id="next-open-label"></div>
+    <p style="margin-top:18px;font-size:13px;">Seguici su Instagram per conoscere meglio l'Azienda Biodinamica Valeria Mascarello</p>
+    <a href="https://www.instagram.com/mascarellovaleria" target="_blank" class="ig-link">
+      <svg width="22" height="22"><use href="#ig-icon"/></svg>
+      <span>@mascarellovaleria</span>
+    </a>
+  </div>
+
+  <!-- ERRORE RETE -->
+  <div id="st-neterr" class="errstate" style="display:none;">
+    <p id="neterr-msg">Impossibile caricare i prodotti.</p>
+    <button class="retybtn" onclick="init()">Riprova</button>
+  </div>
+
+  <!-- FORM -->
+  <div id="st-form" style="display:none;">
+    <div style="height:10px;"></div>
+    <div id="wb-banner" class="wb-banner" style="display:none;">
+      <div class="wb-text">Bentornato, <span class="wb-name" id="wb-name"></span>!</div>
+      <button class="wb-change" onclick="clearSavedCustomer()">Non sei tu? Cambia</button>
+    </div>
+    <div id="last-order" class="last-order" style="display:none;">
+      <div class="lo-title">Il tuo ultimo ordine</div>
+      <div id="lo-meta" class="lo-meta"></div>
+      <div id="lo-lines" class="lo-line"></div>
+      <div id="lo-total" class="lo-total"></div>
+      <p style="font-size:14px;color:var(--tm);margin-top:6px;line-height:1.5;">Il prezzo esatto viene calcolato con la pesa durante la preparazione — potrebbe variare leggermente.</p>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label class="field-lbl" for="cname">Il tuo nome *</label>
+        <input type="text" id="cname" placeholder="Nome e cognome" autocomplete="name" oninput="refreshSum()"/>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label class="field-lbl" for="ctel">Telefono * <span style="font-size:10px;font-weight:normal;text-transform:none;color:var(--tm);">(per identificarti)</span></label>
+        <input type="tel" id="ctel" placeholder="es. 333 1234567" autocomplete="tel" oninput="refreshSum()"/>
+      </div>
+    </div>
+    <div class="sec-lbl" id="sec-week">Prodotti disponibili</div>
+    <div id="plist"></div>
+    <div class="card">
+      <div class="field" style="margin-bottom:0;">
+        <label class="field-lbl" for="cnotes">Note (facoltative)</label>
+        <textarea id="cnotes" placeholder="Es. consegna pomeriggio, allergie, preferenze..."></textarea>
+      </div>
+    </div>
+    <div id="sumbox" class="sumbox" style="display:none;margin-top:4px;">
+      <div class="sumtitle">Il tuo ordine</div>
+      <div id="sumlines" class="sumline"></div>
+      <div id="sumtotal" class="sumtotal"></div>
+      <p style="font-size:14px;color:var(--tm);margin-top:6px;line-height:1.5;">Il prezzo esatto viene calcolato con la pesa durante la preparazione — potrebbe variare leggermente.</p>
+    </div>
+    <div id="errbox" class="errbox" style="display:none;"></div>
+    <button class="sbtn" id="sbtn" onclick="goConfirm()" disabled>Rivedi e conferma →</button>
+    <p class="footnote">I tuoi dati vengono usati solo per gestire l'ordine settimanale.<br>Nome e telefono vengono salvati sul tuo dispositivo per comodità.</p>
+  </div>
+
+  <!-- PAGINA CONFERMA -->
+  <div id="st-confirm" style="display:none;">
+    <div style="height:10px;"></div>
+    <div class="confirm-hdr">
+      <h2>Controlla il tuo ordine</h2>
+      <!-- Modifica 2: nome · telefono · data e ora compilazione -->
+      <p id="confirm-meta"></p>
+    </div>
+    <div class="card">
+      <div id="confirm-rows"></div>
+      <div id="confirm-total" class="confirm-total"></div>
+      <p style="font-size:14px;color:var(--tm);margin-top:8px;line-height:1.5;">Il prezzo esatto viene calcolato con la pesa durante la preparazione — potrebbe variare leggermente.</p>
+    </div>
+    <div class="warning-box">
+      <strong>⚠️ Leggi prima di confermare</strong>
+      <p>Confermando l'ordine, accetti che sia <strong>definitivo e non modificabile</strong>.</p>
+    </div>
+    <div id="confirm-err" class="errbox" style="display:none;"></div>
+    <button class="confirm-btn" id="confirm-btn" onclick="doSubmit()">✓ Confermo l'ordine</button>
+    <button class="back-btn" onclick="goBack()">← Torna indietro e modifica</button>
+  </div>
+
+  <!-- SUCCESSO -->
+  <div id="st-success" class="success" style="display:none;">
+    <div class="sico">✓</div>
+    <h2>Ordine confermato!</h2>
+    <!-- Modifica 3: aggiunge data ritiro mercoledì dinamica -->
+    <p>Grazie <strong id="sname"></strong>!<br>
+    Il tuo ordine è stato registrato.<br>
+    Potrai ritirare il tuo ordine <strong id="success-pickup-date"></strong> dalle ore 17<br>
+    presso il Laboratolio della Fratelli Carli a Imperia.</p>
+    <div class="final-warn">
+      L'ordine è definitivo.<br>
+      Per modifiche o cancellazioni contatta Valeria direttamente per telefono.
+    </div>
+    <a id="satispay-btn" class="satispay-btn" href="#" target="_blank" rel="noopener">💳 Paga <span class="sat-amount"></span> con Satispay</a>
+    <p class="satispay-hint">Si aprirà l'app Satispay.<br>Se l'importo non risulta già inserito, digita <strong><span class="sat-amount"></span></strong>.</p>
+    <div class="bonifico-box">
+      <div class="bonifico-title">Oppure paga con bonifico</div>
+      <div class="bonifico-row">IBAN: <strong class="bonifico-iban">IT37 R030 6949 0000 0000 0005 057</strong></div>
+      <div class="bonifico-row">Intestatario: <strong>Valeria Mascarello</strong></div>
+      <div class="bonifico-row">Causale: nome + settimana ordine</div>
+    </div>
+    <div id="success-recap" class="success-recap" style="display:none;">
+      <div class="sr-title">Riepilogo del tuo ordine</div>
+      <div id="sr-lines" class="sr-line"></div>
+      <div id="sr-total" class="sr-total"></div>
+      <p style="font-size:14px;color:var(--tm);margin-top:6px;line-height:1.5;">Il prezzo esatto viene calcolato con la pesa durante la preparazione — potrebbe variare leggermente.</p>
+      <div id="sr-note" class="sr-note"></div>
+    </div>
+    <a href="https://www.instagram.com/mascarellovaleria" target="_blank" class="ig-link" style="margin-top:18px;">
+      <svg width="22" height="22"><use href="#ig-icon"/></svg>
+      <span>@mascarellovaleria</span>
+    </a>
+  </div>
+
+</div>
+<footer>🌿 Verdura Felice Biodinamica · Azienda Agricola Valeria Mascarello</footer>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const SUPABASE_URL     = "https://ojzojxpncbapqheiaitm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qem9qeHBuY2JhcHFoZWlhaXRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Nzc1MzksImV4cCI6MjA5MDA1MzUzOX0.YyKcZ11oW43umbzmL0mn2-qaeIEIIlD96UgVf2iOe7w";
+const CONFIG_ID        = "mercoledi";
+const FETCH_TIMEOUT_MS = 15000;
+const PHONE_MIN_DIGITS = 9;
+const PHONE_MAX_DIGITS = 10;
+const DEADLINE_HOUR    = 14;
+const DEADLINE_MINUTE  = 15;
+const LS_KEY_NAME      = "vff_cliente_nome";
+const LS_KEY_TEL       = "vff_cliente_tel";
+const LS_KEY_LAST_ORDER = "vff_ultimo_ordine_mercoledi";
+// ─────────────────────────────────────────────────────────────────────────────
+
+function sbHeaders(key) {
+  return { "Content-Type": "application/json", "apikey": key, "Authorization": "Bearer " + key };
+}
+function sbUrl(table, params) {
+  return SUPABASE_URL + "/rest/v1/" + table + (params ? "?" + params : "");
+}
+
+let PRODUCTS = [], settimana = "";
+const qty = {};
+
+// ─── UTILITIES ───────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function fetchWithTimeout(url, options, ms) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ms || FETCH_TIMEOUT_MS);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));
+}
+function showState(s) {
+  ["loading","chiuso","neterr","form","confirm","success"].forEach(id =>
+    document.getElementById("st-" + id).style.display = id === s ? "block" : "none"
+  );
+}
+
+// ─── DATE HELPERS ─────────────────────────────────────────────────────────────
+/** Prossimo mercoledì di CONSEGNA. Se oggi è mercoledì -> successivo; se martedì dopo la deadline -> successivo. */
+function getNextWednesday() {
+  const now = new Date();
+  const day = now.getDay();
+  const h = now.getHours(), m = now.getMinutes();
+  let daysToWed = (3 - day + 7) % 7;
+  if (daysToWed === 0) {
+    daysToWed = 7;
+  } else if (day === 2 && (h > DEADLINE_HOUR || (h === DEADLINE_HOUR && m >= DEADLINE_MINUTE))) {
+    daysToWed = 8;
+  }
+  const wed = new Date(now);
+  wed.setDate(now.getDate() + daysToWed);
+  wed.setHours(0, 0, 0, 0);
+  return wed;
+}
+
+// Parsa un label tipo "Mercoledì 23 maggio 2026" e ritorna un Date, o null se non parsabile.
+const ITA_MONTHS = {gennaio:0,febbraio:1,marzo:2,aprile:3,maggio:4,giugno:5,luglio:6,agosto:7,settembre:8,ottobre:9,novembre:10,dicembre:11};
+function parseItalianWednesdayLabel(label) {
+  if (!label) return null;
+  const m = label.toLowerCase().match(/mercoledì\s+(\d{1,2})\s+([a-zà-ù]+)(?:\s+(\d{4}))?/);
+  if (!m) return null;
+  const day = parseInt(m[1], 10);
+  const month = ITA_MONTHS[m[2]];
+  if (month === undefined) return null;
+  const year = m[3] ? parseInt(m[3], 10) : new Date().getFullYear();
+  return new Date(year, month, day);
+}
+// Una settimana DB è valida se inizia con "mercoledì" E la data è di oggi o nel futuro.
+function isValidWednesdayWeek(label) {
+  const d = parseItalianWednesdayLabel(label);
+  if (!d) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return d >= today;
+}
+
+/** "Consegna mercoledì 8 aprile" */
+function getNextWednesdayLabel() {
+  const wed = getNextWednesday();
+  return "Consegna " + wed.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+}
+
+/** "mercoledì 8 aprile" — per testo inline */
+function getNextWednesdayShort() {
+  const wed = getNextWednesday();
+  return wed.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+}
+
+/** Prossimo lunedì — per "la lista sarà disponibile da:" (comunicato; il gate apre di domenica) */
+function getNextMonday() {
+  const now = new Date();
+  const daysToMon = (1 - now.getDay() + 7) % 7 || 7;
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + daysToMon);
+  return mon.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+}
+
+/** Data e ora corrente formattata: "28 mar, 11:41" */
+function getNowLabel() {
+  const now = new Date();
+  return now.toLocaleDateString("it-IT", { day: "numeric", month: "short" })
+    + ", " + now.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+}
+
+// ─── CUSTOMER MEMORY ─────────────────────────────────────────────────────────
+function prefillCustomer() {
+  try {
+    const savedName = localStorage.getItem(LS_KEY_NAME) || "";
+    const savedTel  = localStorage.getItem(LS_KEY_TEL)  || "";
+    if (savedName && savedTel) {
+      document.getElementById("cname").value = savedName;
+      document.getElementById("ctel").value  = savedTel;
+      document.getElementById("wb-name").textContent = savedName;
+      document.getElementById("wb-banner").style.display = "flex";
+      refreshSum();
+    }
+  } catch (e) {}
+  // showLastOrder() viene chiamata da init() dopo che `settimana` è stata caricata,
+  // così possiamo confrontare la settimana salvata con quella attuale.
+}
+function saveCustomer(name, tel) {
+  try { localStorage.setItem(LS_KEY_NAME, name); localStorage.setItem(LS_KEY_TEL, tel); } catch (e) {}
+}
+function clearSavedCustomer() {
+  try { localStorage.removeItem(LS_KEY_NAME); localStorage.removeItem(LS_KEY_TEL); } catch (e) {}
+  document.getElementById("cname").value = "";
+  document.getElementById("ctel").value  = "";
+  document.getElementById("wb-banner").style.display = "none";
+  document.getElementById("last-order").style.display = "none";
+  document.getElementById("cname").focus();
+  refreshSum();
+}
+
+// ─── LAST ORDER ───────────────────────────────────────────────────────────────
+function saveLastOrder(name, items, total, notes, week) {
+  try {
+    localStorage.setItem(LS_KEY_LAST_ORDER, JSON.stringify({
+      nome: name, prodotti: items, totale: total, note: notes, settimana: week,
+      data: new Date().toLocaleString("it-IT")
+    }));
+  } catch (e) {}
+}
+function buildOrderLines(prodotti) {
+  return prodotti.map(p =>
+    `${esc(p.nome)}: ${p.qty} ${esc(p.unit)} × €${Number(p.prezzo).toFixed(2)} = <b>€${Number(p.sub).toFixed(2)}</b>`
+  ).join("<br>");
+}
+function showSuccessRecap(items, total, notes) {
+  document.getElementById("sr-lines").innerHTML = buildOrderLines(items);
+  document.getElementById("sr-total").textContent = "Totale indicativo: €" + total.toFixed(2);
+  const noteEl = document.getElementById("sr-note");
+  noteEl.textContent = notes ? "Note: " + notes : "";
+  noteEl.style.display = notes ? "block" : "none";
+  document.getElementById("success-recap").style.display = "block";
+}
+function showLastOrder() {
+  try {
+    const raw = localStorage.getItem(LS_KEY_LAST_ORDER);
+    if (!raw) return;
+    const order = JSON.parse(raw);
+    if (!order || !order.prodotti || !order.prodotti.length) return;
+    // Mostra il banner SOLO se la settimana salvata coincide con quella corrente.
+    // Altrimenti l'ordine è vecchio: lo lasciamo in localStorage ma non lo mostriamo.
+    if (!order.settimana || order.settimana !== settimana) return;
+    document.getElementById("lo-meta").textContent = (order.settimana || "") + " · " + (order.data || "");
+    document.getElementById("lo-lines").innerHTML = buildOrderLines(order.prodotti);
+    document.getElementById("lo-total").textContent = "Totale indicativo: €" + Number(order.totale).toFixed(2);
+    document.getElementById("last-order").style.display = "block";
+  } catch (e) {}
+}
+
+// ─── TIME GATE ────────────────────────────────────────────────────────────────
+function isOutsideOrderWindow() {
+  // Bypass per test: ?test=1 nell'URL salta il gate temporale.
+  // Non bypassa il flag `aperto` del DB, quindi è sicuro lasciarlo in produzione.
+  if (new URLSearchParams(location.search).get("test") === "1") return false;
+  const now = new Date();
+  const day = now.getDay();
+  const h = now.getHours(), m = now.getMinutes();
+  // Chiuso da mercoledì(3) a sabato(6)
+  if (day >= 3 && day <= 6) return true;
+  // Martedì(2) dopo le 14:15 -> chiuso (deadline)
+  if (day === 2 && (h > DEADLINE_HOUR || (h === DEADLINE_HOUR && m >= DEADLINE_MINUTE))) return true;
+  // Domenica(0), lunedì(1), martedì(2) pre-deadline -> aperto
+  return false;
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+async function init() {
+  showState("loading");
+
+  // Modifica 1: pill con data mercoledì dinamica
+  const wpill = document.getElementById("wpill");
+  wpill.textContent = getNextWednesdayLabel();
+  wpill.style.display = "inline-block";
+
+  if (isOutsideOrderWindow()) {
+    document.getElementById("next-open-label").textContent = getNextMonday();
+    document.getElementById("header-orario").style.display = "none";
+    document.getElementById("wpill").style.display = "none";
+    showState("chiuso");
+    return;
+  }
+
+  try {
+    const res = await fetchWithTimeout(
+      sbUrl("config", "id=eq." + CONFIG_ID + "&select=*"),
+      { headers: sbHeaders(SUPABASE_ANON_KEY) }
+    );
+    if (!res.ok) throw new Error("Errore server: " + res.status);
+    const rows = await res.json();
+    if (!rows.length) throw new Error("Configurazione non trovata.");
+    const cfg = rows[0];
+
+    if (!cfg.aperto) {
+      document.getElementById("next-open-label").textContent = getNextMonday();
+      document.getElementById("header-orario").style.display = "none";
+      document.getElementById("wpill").style.display = "none";
+      showState("chiuso");
+      return;
+    }
+
+    PRODUCTS  = cfg.prodotti || [];
+    settimana = isValidWednesdayWeek(cfg.settimana) ? cfg.settimana : getNextWednesdayLabel();
+    document.getElementById("sec-week").textContent = "Prodotti disponibili";
+
+    if (!PRODUCTS.length) {
+      document.getElementById("neterr-msg").textContent = "Nessun prodotto disponibile al momento. Riprova più tardi.";
+      showState("neterr");
+      return;
+    }
+    PRODUCTS.forEach(p => qty[p.id] = 0);
+    renderProducts();
+    showState("form");
+    prefillCustomer();
+    showLastOrder();
+  } catch (e) {
+    document.getElementById("neterr-msg").textContent = e.name === "AbortError"
+      ? "Il server non risponde. Controlla la connessione e riprova."
+      : "Impossibile caricare i prodotti. Controlla la connessione e riprova.";
+    showState("neterr");
+  }
+}
+
+// ─── PRODUCT RENDERING ───────────────────────────────────────────────────────
+function renderProducts() {
+  document.getElementById("plist").innerHTML = PRODUCTS.map(p => {
+    const q = qty[p.id] || 0;
+    const noteHtml = p.note ? `<span style="font-size:11px;color:var(--tm);margin-left:5px;">(${esc(p.note)})</span>` : "";
+    return `<div class="pi${q > 0 ? " on" : ""}" id="pi-${p.id}">
+      <div class="pinfo">
+        <div class="pname">${esc(p.n)}${noteHtml}</div>
+        <div class="pprice">€${Number(p.p).toFixed(2)} / ${esc(p.u)}</div>
+      </div>
+      <div class="qcol"><div class="qrow">
+        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',-${p.step || 0.5})">−</button>
+        <div><div class="qval" id="qv-${p.id}">${q}</div><div class="qunit">${esc(p.u)}</div></div>
+        <button class="qbtn" ontouchstart="" onclick="chQty('${p.id}',${p.step || 0.5})">+</button>
+      </div></div>
+    </div>`;
+  }).join("");
+}
+
+// ─── QUANTITY & SUMMARY ──────────────────────────────────────────────────────
+function chQty(id, delta) {
+  qty[id] = Math.max(0, Math.round(((qty[id] || 0) + delta) * 10) / 10);
+  document.getElementById("qv-" + id).textContent = qty[id];
+  document.getElementById("pi-" + id).classList.toggle("on", qty[id] > 0);
+  refreshSum();
+}
+function refreshSum() {
+  const name = (document.getElementById("cname").value || "").trim();
+  const tel  = (document.getElementById("ctel").value || "").trim();
+  const lines = [], rows = [];
+  let total = 0;
+  PRODUCTS.forEach(p => {
+    const q = qty[p.id] || 0;
+    if (!q) return;
+    const sub = Math.round(q * p.p * 100) / 100;
+    total += sub;
+    lines.push(`${esc(p.n)}: ${q} ${esc(p.u)} × €${Number(p.p).toFixed(2)} = <b>€${sub.toFixed(2)}</b>`);
+    rows.push(`${p.n} | ${q} ${p.u} | €${Number(p.p).toFixed(2)} | €${sub.toFixed(2)}`);
+  });
+  const hasItems = lines.length > 0;
+  document.getElementById("sumbox").style.display = hasItems ? "block" : "none";
+  if (hasItems) {
+    document.getElementById("sumlines").innerHTML = lines.join("<br>");
+    document.getElementById("sumtotal").textContent = "Totale indicativo: €" + total.toFixed(2);
+  }
+  document.getElementById("sbtn").disabled = !(name && tel && hasItems);
+  window._rows = rows;
+  window._total = total;
+}
+
+// ─── CONFIRM PAGE ────────────────────────────────────────────────────────────
+function goConfirm() {
+  const name = (document.getElementById("cname").value || "").trim();
+  const tel  = (document.getElementById("ctel").value || "").trim();
+  let ok = true;
+
+  document.getElementById("cname").classList.toggle("err", !name);
+  if (!name) ok = false;
+
+  const telClean = tel.replace(/[\s\-\+]/g, "");
+  const telOk = /^\d+$/.test(telClean) && telClean.length >= PHONE_MIN_DIGITS && telClean.length <= PHONE_MAX_DIGITS;
+  document.getElementById("ctel").classList.toggle("err", !telOk);
+  if (!telOk) ok = false;
+
+  if (!ok) {
+    const eb = document.getElementById("errbox");
+    const problems = [];
+    if (!name) problems.push("inserisci il tuo nome");
+    if (!telOk) problems.push(`inserisci un numero di telefono valido (${PHONE_MIN_DIGITS}-${PHONE_MAX_DIGITS} cifre)`);
+    eb.textContent = "Per continuare: " + problems.join(" e ") + ".";
+    eb.style.display = "block";
+    return;
+  }
+  document.getElementById("errbox").style.display = "none";
+
+  // Modifica 2: meta = nome · telefono · data e ora compilazione
+  document.getElementById("confirm-meta").textContent = name + " · " + tel + " · " + getNowLabel();
+
+  const items = PRODUCTS.filter(p => (qty[p.id] || 0) > 0);
+  document.getElementById("confirm-rows").innerHTML = items.map(p => {
+    const q = qty[p.id], sub = Math.round(q * p.p * 100) / 100;
+    return `<div class="confirm-row">
+      <div><div class="pn">${esc(p.n)}</div><div class="ps">${q} ${esc(p.u)} × €${Number(p.p).toFixed(2)}</div></div>
+      <div class="pt">€${sub.toFixed(2)}</div>
+    </div>`;
+  }).join("");
+  document.getElementById("confirm-total").textContent = "Totale indicativo: €" + (window._total || 0).toFixed(2);
+  showState("confirm");
+  window.scrollTo(0, 0);
+}
+
+function goBack() {
+  document.getElementById("confirm-err").style.display = "none";
+  showState("form");
+  window.scrollTo(0, 0);
+}
+
+// ─── SUBMIT ORDER ────────────────────────────────────────────────────────────
+async function doSubmit() {
+  const name  = (document.getElementById("cname").value || "").trim();
+  const tel   = (document.getElementById("ctel").value || "").trim();
+  const notes = (document.getElementById("cnotes").value || "").trim();
+  const btn   = document.getElementById("confirm-btn");
+  btn.disabled = true;
+  btn.textContent = "Invio in corso...";
+  document.getElementById("confirm-err").style.display = "none";
+  try {
+    const now = new Date();
+    const pad = (n, l=2) => String(n).padStart(l, "0");
+    const orderId = "VFF-" + now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate())
+      + "-" + pad(now.getHours()) + pad(now.getMinutes())
+      + "-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+
+    const res = await fetchWithTimeout(sbUrl("ordini"), {
+      method: "POST",
+      headers: { ...sbHeaders(SUPABASE_ANON_KEY), "Prefer": "return=minimal" },
+      body: JSON.stringify({
+        id: orderId, cliente: name, telefono: tel.replace(/[\s\-\+]/g, ""),
+        prodotti_dettaglio: (window._rows || []).join("\n"),
+        totale: parseFloat((window._total || 0).toFixed(2)),
+        note: notes || null, settimana: settimana, giorno: CONFIG_ID
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Il server ha rifiutato l'ordine.");
+    }
+    saveCustomer(name, tel);
+    const orderItems = PRODUCTS.filter(p => (qty[p.id] || 0) > 0).map(p => {
+      const q = qty[p.id];
+      return { nome: p.n, qty: q, unit: p.u, prezzo: p.p, sub: Math.round(q * p.p * 100) / 100 };
+    });
+    saveLastOrder(name, orderItems, window._total || 0, notes, settimana);
+    showSuccessRecap(orderItems, window._total || 0, notes);
+
+    // Modifica 3: data ritiro mercoledì dinamica nella pagina successo
+    document.getElementById("success-pickup-date").textContent = getNextWednesdayShort();
+    // Satispay: link di pagamento con importo in centesimi (totale x 100).
+    // Se l'app non precompila l'importo, e comunque mostrato a schermo (pulsante + nota) per digitarlo a mano.
+    const _cents = Math.round((window._total || 0) * 100);
+    const _eur = "€" + (window._total || 0).toFixed(2);
+    const _sBtn = document.getElementById("satispay-btn");
+    _sBtn.href = "https://www.satispay.com/app/pay/shops/fbfed8ef-41cf-4ff3-98dd-082f8b39d877?amount=" + _cents;
+    document.querySelectorAll(".sat-amount").forEach(el => el.textContent = _eur);
+    document.getElementById("sname").textContent = name;
+    showState("success");
+    window.scrollTo(0, 0);
+  } catch (e) {
+    const eb = document.getElementById("confirm-err");
+    eb.textContent = e.name === "AbortError"
+      ? "Il server non risponde. Riprova tra qualche istante."
+      : "Errore durante l'invio: " + (e.message || "Riprova o contatta direttamente Valeria.");
+    eb.style.display = "block";
+    btn.disabled = false;
+    btn.textContent = "✓ Confermo l'ordine";
+  }
+}
+
+init();
+</script>
+</body>
+</html>
