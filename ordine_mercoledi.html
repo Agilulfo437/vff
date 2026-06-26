@@ -172,6 +172,7 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
       <div id="lo-meta" class="lo-meta"></div>
       <div id="lo-lines" class="lo-line"></div>
       <div id="lo-total" class="lo-total"></div>
+      <p style="font-size:14px;color:var(--tm);margin-top:6px;line-height:1.5;">Il prezzo esatto viene calcolato con la pesa durante la preparazione — potrebbe variare leggermente.</p>
     </div>
     <div class="card">
       <div class="field">
@@ -195,6 +196,7 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
       <div class="sumtitle">Il tuo ordine</div>
       <div id="sumlines" class="sumline"></div>
       <div id="sumtotal" class="sumtotal"></div>
+      <p style="font-size:14px;color:var(--tm);margin-top:6px;line-height:1.5;">Il prezzo esatto viene calcolato con la pesa durante la preparazione — potrebbe variare leggermente.</p>
     </div>
     <div id="errbox" class="errbox" style="display:none;"></div>
     <button class="sbtn" id="sbtn" onclick="goConfirm()" disabled>Rivedi e conferma →</button>
@@ -212,6 +214,7 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
     <div class="card">
       <div id="confirm-rows"></div>
       <div id="confirm-total" class="confirm-total"></div>
+      <p style="font-size:14px;color:var(--tm);margin-top:8px;line-height:1.5;">Il prezzo esatto viene calcolato con la pesa durante la preparazione — potrebbe variare leggermente.</p>
     </div>
     <div class="warning-box">
       <strong>⚠️ Leggi prima di confermare</strong>
@@ -247,6 +250,7 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
       <div class="sr-title">Riepilogo del tuo ordine</div>
       <div id="sr-lines" class="sr-line"></div>
       <div id="sr-total" class="sr-total"></div>
+      <p style="font-size:14px;color:var(--tm);margin-top:6px;line-height:1.5;">Il prezzo esatto viene calcolato con la pesa durante la preparazione — potrebbe variare leggermente.</p>
       <div id="sr-note" class="sr-note"></div>
     </div>
     <a href="https://www.instagram.com/mascarellovaleria" target="_blank" class="ig-link" style="margin-top:18px;">
@@ -261,7 +265,9 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const SUPABASE_URL     = "https://ojzojxpncbapqheiaitm.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qem9qeHBuY2JhcHFoZWlhaXRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Nzc1MzksImV4cCI6MjA5MDA1MzUzOX0.YyKcZ11oW43umbzmL0mn2-qaeIEIIlD96UgVf2iOe7w";
+// Chiave PUBBLICA (publishable). Sicura in browser: con la RLS può solo
+// leggere la config e inserire ordini. Sostituisce la vecchia anon legacy.
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_WWRxn3WLUOcBB36Mh-a3Qg_REICiiQ5";
 const CONFIG_ID        = "mercoledi";
 const FETCH_TIMEOUT_MS = 15000;
 const PHONE_MIN_DIGITS = 9;
@@ -274,7 +280,9 @@ const LS_KEY_LAST_ORDER = "vff_ultimo_ordine_mercoledi";
 // ─────────────────────────────────────────────────────────────────────────────
 
 function sbHeaders(key) {
-  return { "Content-Type": "application/json", "apikey": key, "Authorization": "Bearer " + key };
+  // Le chiavi nuove (sb_publishable/sb_secret) NON vanno in Authorization: Bearer,
+  // solo nell'header apikey. Mandare Bearer le farebbe rifiutare da Supabase.
+  return { "Content-Type": "application/json", "apikey": key };
 }
 function sbUrl(table, params) {
   return SUPABASE_URL + "/rest/v1/" + table + (params ? "?" + params : "");
@@ -410,7 +418,7 @@ function buildOrderLines(prodotti) {
 }
 function showSuccessRecap(items, total, notes) {
   document.getElementById("sr-lines").innerHTML = buildOrderLines(items);
-  document.getElementById("sr-total").textContent = "Totale da pagare: €" + total.toFixed(2);
+  document.getElementById("sr-total").textContent = "Totale indicativo: €" + total.toFixed(2);
   const noteEl = document.getElementById("sr-note");
   noteEl.textContent = notes ? "Note: " + notes : "";
   noteEl.style.display = notes ? "block" : "none";
@@ -427,7 +435,7 @@ function showLastOrder() {
     if (!order.settimana || order.settimana !== settimana) return;
     document.getElementById("lo-meta").textContent = (order.settimana || "") + " · " + (order.data || "");
     document.getElementById("lo-lines").innerHTML = buildOrderLines(order.prodotti);
-    document.getElementById("lo-total").textContent = "Totale da pagare: €" + Number(order.totale).toFixed(2);
+    document.getElementById("lo-total").textContent = "Totale indicativo: €" + Number(order.totale).toFixed(2);
     document.getElementById("last-order").style.display = "block";
   } catch (e) {}
 }
@@ -468,7 +476,7 @@ async function init() {
   try {
     const res = await fetchWithTimeout(
       sbUrl("config", "id=eq." + CONFIG_ID + "&select=*"),
-      { headers: sbHeaders(SUPABASE_ANON_KEY) }
+      { headers: sbHeaders(SUPABASE_PUBLISHABLE_KEY) }
     );
     if (!res.ok) throw new Error("Errore server: " + res.status);
     const rows = await res.json();
@@ -548,7 +556,7 @@ function refreshSum() {
   document.getElementById("sumbox").style.display = hasItems ? "block" : "none";
   if (hasItems) {
     document.getElementById("sumlines").innerHTML = lines.join("<br>");
-    document.getElementById("sumtotal").textContent = "Totale da pagare: €" + total.toFixed(2);
+    document.getElementById("sumtotal").textContent = "Totale indicativo: €" + total.toFixed(2);
   }
   document.getElementById("sbtn").disabled = !(name && tel && hasItems);
   window._rows = rows;
@@ -591,7 +599,7 @@ function goConfirm() {
       <div class="pt">€${sub.toFixed(2)}</div>
     </div>`;
   }).join("");
-  document.getElementById("confirm-total").textContent = "Totale da pagare: €" + (window._total || 0).toFixed(2);
+  document.getElementById("confirm-total").textContent = "Totale indicativo: €" + (window._total || 0).toFixed(2);
   showState("confirm");
   window.scrollTo(0, 0);
 }
@@ -620,7 +628,7 @@ async function doSubmit() {
 
     const res = await fetchWithTimeout(sbUrl("ordini"), {
       method: "POST",
-      headers: { ...sbHeaders(SUPABASE_ANON_KEY), "Prefer": "return=minimal" },
+      headers: { ...sbHeaders(SUPABASE_PUBLISHABLE_KEY), "Prefer": "return=minimal" },
       body: JSON.stringify({
         id: orderId, cliente: name, telefono: tel.replace(/[\s\-\+]/g, ""),
         prodotti_dettaglio: (window._rows || []).join("\n"),
