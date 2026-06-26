@@ -418,7 +418,7 @@ function buildOrderLines(prodotti) {
 }
 function showSuccessRecap(items, total, notes) {
   document.getElementById("sr-lines").innerHTML = buildOrderLines(items);
-  document.getElementById("sr-total").textContent = "Totale indicativo: €" + total.toFixed(2);
+  document.getElementById("sr-total").textContent = "Totale da pagare: €" + total.toFixed(2);
   const noteEl = document.getElementById("sr-note");
   noteEl.textContent = notes ? "Note: " + notes : "";
   noteEl.style.display = notes ? "block" : "none";
@@ -435,7 +435,7 @@ function showLastOrder() {
     if (!order.settimana || order.settimana !== settimana) return;
     document.getElementById("lo-meta").textContent = (order.settimana || "") + " · " + (order.data || "");
     document.getElementById("lo-lines").innerHTML = buildOrderLines(order.prodotti);
-    document.getElementById("lo-total").textContent = "Totale indicativo: €" + Number(order.totale).toFixed(2);
+    document.getElementById("lo-total").textContent = "Totale: €" + Number(order.totale).toFixed(2);
     document.getElementById("last-order").style.display = "block";
   } catch (e) {}
 }
@@ -556,7 +556,7 @@ function refreshSum() {
   document.getElementById("sumbox").style.display = hasItems ? "block" : "none";
   if (hasItems) {
     document.getElementById("sumlines").innerHTML = lines.join("<br>");
-    document.getElementById("sumtotal").textContent = "Totale indicativo: €" + total.toFixed(2);
+    document.getElementById("sumtotal").textContent = "Totale da pagare: €" + total.toFixed(2);
   }
   document.getElementById("sbtn").disabled = !(name && tel && hasItems);
   window._rows = rows;
@@ -599,7 +599,7 @@ function goConfirm() {
       <div class="pt">€${sub.toFixed(2)}</div>
     </div>`;
   }).join("");
-  document.getElementById("confirm-total").textContent = "Totale indicativo: €" + (window._total || 0).toFixed(2);
+  document.getElementById("confirm-total").textContent = "Totale da pagare: €" + (window._total || 0).toFixed(2);
   showState("confirm");
   window.scrollTo(0, 0);
 }
