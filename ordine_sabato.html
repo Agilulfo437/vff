@@ -248,7 +248,7 @@ footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);}
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const SUPABASE_URL     = "https://ojzojxpncbapqheiaitm.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qem9qeHBuY2JhcHFoZWlhaXRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Nzc1MzksImV4cCI6MjA5MDA1MzUzOX0.YyKcZ11oW43umbzmL0mn2-qaeIEIIlD96UgVf2iOe7w";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_WWRxn3WLUOcBB36Mh-a3Qg_REICiiQ5";
 const CONFIG_ID        = "sabato";
 const FETCH_TIMEOUT_MS = 15000;
 const PHONE_MIN_DIGITS = 9;
@@ -261,7 +261,7 @@ const LS_KEY_LAST_ORDER = "vff_ultimo_ordine";
 // ─────────────────────────────────────────────────────────────────────────────
 
 function sbHeaders(key) {
-  return { "Content-Type": "application/json", "apikey": key, "Authorization": "Bearer " + key };
+  return { "Content-Type": "application/json", "apikey": key };
 }
 function sbUrl(table, params) {
   return SUPABASE_URL + "/rest/v1/" + table + (params ? "?" + params : "");
@@ -446,7 +446,7 @@ async function init() {
   try {
     const res = await fetchWithTimeout(
       sbUrl("config", "id=eq." + CONFIG_ID + "&select=*"),
-      { headers: sbHeaders(SUPABASE_ANON_KEY) }
+      { headers: sbHeaders(SUPABASE_PUBLISHABLE_KEY) }
     );
     if (!res.ok) throw new Error("Errore server: " + res.status);
     const rows = await res.json();
@@ -598,7 +598,7 @@ async function doSubmit() {
 
     const res = await fetchWithTimeout(sbUrl("ordini"), {
       method: "POST",
-      headers: { ...sbHeaders(SUPABASE_ANON_KEY), "Prefer": "return=minimal" },
+      headers: { ...sbHeaders(SUPABASE_PUBLISHABLE_KEY), "Prefer": "return=minimal" },
       body: JSON.stringify({
         id: orderId, cliente: name, telefono: tel.replace(/[\s\-\+]/g, ""),
         prodotti_dettaglio: (window._rows || []).join("\n"),
