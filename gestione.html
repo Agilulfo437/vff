@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gestione — Verdura e Frutta Felice</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g:#2d6b47;--gd:#1e4d32;--gl:#eaf4ee;--gm:#74b893;
+  --sand:#f6f3ee;--sandd:#ede8df;--t:#222;--tm:#7a736a;--b:#ddd8ce;
+  --red:#b03030;--redl:#fdf1f0;--amb:#a06010;--ambl:#fdf7ee;
+  --r:12px;--rs:7px;
+}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--sand);color:var(--t);min-height:100vh;}
+.login-screen{position:fixed;inset:0;background:var(--gd);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.login-box{background:#fff;border-radius:16px;padding:32px 28px;width:300px;max-width:90vw;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.25);}
+.login-logo{width:56px;height:56px;background:var(--gl);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:26px;}
+.login-box h2{font-family:Georgia,serif;font-weight:normal;font-size:20px;color:var(--gd);margin-bottom:4px;}
+.login-box p{font-size:13px;color:var(--tm);margin-bottom:20px;}
+.login-box input{width:100%;padding:13px 14px;font-size:18px;letter-spacing:4px;text-align:center;border:1.5px solid var(--b);border-radius:var(--rs);outline:none;font-family:inherit;-webkit-appearance:none;}
+.login-box input:focus{border-color:var(--g);}
+.login-btn{width:100%;margin-top:12px;padding:13px;background:var(--g);color:#fff;border:none;border-radius:var(--rs);font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit;}
+.login-err{font-size:12px;color:var(--red);margin-top:8px;height:16px;}
+header{background:var(--gd);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+header h1{color:#fff;font-size:16px;font-family:Georgia,serif;font-weight:normal;}
+.hw{color:rgba(255,255,255,.6);font-size:12px;}
+.pg{padding:16px;max-width:640px;margin:0 auto;}
+.card{background:#fff;border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:13px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+h2{font-size:15px;font-weight:normal;font-family:Georgia,serif;color:var(--gd);margin-bottom:13px;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;font-size:13px;font-family:inherit;border-radius:var(--rs);border:1px solid var(--b);cursor:pointer;background:#fff;color:var(--t);}
+.btn:active{opacity:.75;}
+.btn-full{width:100%;justify-content:center;padding:12px;font-size:14px;}
+.btn-excel{background:#e8f5e0;color:#2d6b20;border-color:#b8d8a8;}
+.btn-red{background:var(--redl);color:var(--red);border-color:#f0c0b8;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.15);border-top-color:var(--g);border-radius:50%;animation:sp .6s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.giorni-list{display:flex;flex-direction:column;gap:9px;}
+.gvoce{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--b);border-radius:var(--r);text-decoration:none;color:var(--t);background:#fff;}
+.gvoce:active{opacity:.8;}
+.gvoce .ic{font-size:22px;}
+.gvoce .info{flex:1;}
+.gvoce .nome{font-size:15px;font-family:Georgia,serif;color:var(--gd);}
+.gvoce .sotto{font-size:12px;color:var(--tm);margin-top:2px;}
+.gvoce .arrow{color:var(--tm);font-size:18px;}
+.gvoce.grigio{opacity:.5;cursor:default;background:var(--sand);}
+.gvoce.grigio .nome{color:var(--tm);}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:.4px;background:var(--gl);color:var(--gd);border-radius:4px;padding:2px 7px;}
+.badge-grigio{background:var(--sandd);color:var(--tm);}
+.msg-ok{background:var(--gl);color:var(--gd);border-radius:var(--rs);padding:9px 13px;font-size:13px;margin-bottom:11px;}
+.msg-err{background:var(--redl);color:var(--red);border-radius:var(--rs);padding:9px 13px;font-size:13px;margin-bottom:11px;}
+.iscr-item{padding:10px 12px;border:1px solid var(--b);border-radius:var(--rs);margin-bottom:7px;}
+.iscr-item:last-child{margin-bottom:0;}
+.iscr-nome{font-size:14px;font-weight:bold;color:var(--gd);}
+.iscr-meta{font-size:12px;color:var(--tm);margin-top:2px;}
+.iscr-comm{font-size:12px;color:var(--t);font-style:italic;margin-top:5px;}
+.empty{text-align:center;padding:16px;color:var(--tm);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-screen" style="display:none;">
+  <div class="login-box">
+    <div class="login-logo">🌿</div>
+    <h2>Verdura e Frutta Felice</h2>
+    <p>Inserisci la password per accedere</p>
+    <input type="password" id="pwd-input" placeholder="••••••••"
+      onkeydown="if(event.key==='Enter')checkPwd()" autofocus/>
+    <button class="login-btn" onclick="checkPwd()">Accedi</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+
+<header>
+  <h1>🌿 Verdura e Frutta Felice — Gestione</h1>
+  <span class="hw">Benvenuta Valeria!</span>
+</header>
+
+<div class="pg">
+  <div style="height:13px;"></div>
+  <div id="msg"></div>
+  <div class="card">
+    <h2>Giorni di consegna</h2>
+    <div class="giorni-list">
+      <a class="gvoce" href="gestione_sabato.html">
+        <span class="ic">🥕</span>
+        <span class="info">
+          <div class="nome">Sabato</div>
+          <div class="sotto">Ritiro azienda / mercato Imperia Oneglia</div>
+        </span>
+        <span class="badge">Attivo</span>
+        <span class="arrow">›</span>
+      </a>
+      <a class="gvoce" href="gestione_mercoledi.html">
+        <span class="ic">🥬</span>
+        <span class="info">
+          <div class="nome">Mercoledì</div>
+          <div class="sotto">Consegna Laboratolio Fratelli Carli, Imperia</div>
+        </span>
+        <span class="badge">Attivo</span>
+        <span class="arrow">›</span>
+      </a>
+      <div class="gvoce grigio">
+        <span class="ic">🌊</span>
+        <span class="info">
+          <div class="nome">Alassio</div>
+          <div class="sotto">Lista in formazione</div>
+        </span>
+        <span class="badge badge-grigio">Non attivo</span>
+      </div>
+      <div class="gvoce grigio">
+        <span class="ic">🌸</span>
+        <span class="info">
+          <div class="nome">Sanremo</div>
+          <div class="sotto">Lista in formazione</div>
+        </span>
+        <span class="badge badge-grigio">Non attivo</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Iscrizioni ricevute</h2>
+    <button class="btn btn-full" id="iscr-btn" onclick="loadIscrizioni()">↻ Carica iscrizioni</button>
+    <div id="iscr-list" style="margin-top:11px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Esportazione dati</h2>
+    <button class="btn btn-full btn-excel" id="excel-btn" onclick="exportExcelTutti()">↓ Scarica Excel — tutti i giorni</button>
+    <p style="font-size:11px;color:var(--tm);text-align:center;margin-top:8px;">
+      Include gli ordini di tutti i giorni e la lista iscrizioni.
+    </p>
+  </div>
+
+  <div class="card">
+    <button class="btn btn-full btn-red" onclick="logout()">Esci</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const EDGE_FN_URL      = "https://ojzojxpncbapqheiaitm.supabase.co/functions/v1/admin";
+const XLSX_CDN         = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+const FETCH_TIMEOUT_MS = 15000;
+// ─────────────────────────────────────────────────────────────────────────────
+
+function esc(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function showMsg(type, txt) {
+  const el = document.getElementById("msg");
+  el.innerHTML = `<div class="msg-${type === "ok" ? "ok" : "err"}">${txt}</div>`;
+  if (type === "ok") setTimeout(() => el.innerHTML = "", 5000);
+}
+function fetchWithTimeout(url, options, ms) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ms || FETCH_TIMEOUT_MS);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));
+}
+
+// ─── ADMIN (Edge Function) ────────────────────────────────────────────────────
+function getAdminPwd() {
+  return sessionStorage.getItem("vff_admin_pwd") || "";
+}
+function forceReLogin() {
+  sessionStorage.removeItem("vff_admin_pwd");
+  document.getElementById("app").style.display = "none";
+  document.getElementById("login-screen").style.display = "flex";
+}
+async function callAdmin(action, payload) {
+  const res = await fetchWithTimeout(EDGE_FN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: getAdminPwd(), action, ...(payload || {}) })
+  });
+  if (res.status === 401) {
+    forceReLogin();
+    throw new Error("Sessione scaduta. Accedi di nuovo.");
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    const err = new Error(data.message || data.error || "Risposta non valida.");
+    err.fromServer = true;
+    throw err;
+  }
+  return data;
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+async function checkPwd() {
+  const pwd = document.getElementById("pwd-input").value;
+  sessionStorage.setItem("vff_admin_pwd", pwd);
+  try {
+    await callAdmin("ping");
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+  } catch (e) {
+    sessionStorage.removeItem("vff_admin_pwd");
+    const el = document.getElementById("login-err");
+    el.textContent = "Password errata. Riprova.";
+    document.getElementById("pwd-input").value = "";
+    document.getElementById("pwd-input").focus();
+    setTimeout(() => el.textContent = "", 3000);
+  }
+}
+function logout() {
+  sessionStorage.removeItem("vff_admin_pwd");
+  location.href = "gestione.html";
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+// L'hub non chiama getOrders al caricamento: si apre istantaneamente.
+// Rivalida sempre la password con un ping, così una password cambiata non lascia entrare.
+async function init() {
+  let authed = false;
+  if (getAdminPwd()) {
+    try { await callAdmin("ping"); authed = true; } catch (e) { /* password non valida */ }
+  }
+  if (authed) {
+    document.getElementById("app").style.display = "block";
+  } else {
+    sessionStorage.removeItem("vff_admin_pwd");
+    document.getElementById("login-screen").style.display = "flex";
+  }
+}
+
+// ─── ORDER PARSING HELPERS (identici ai pannelli gestione_*.html) ─────────────
+function parseProductLine(line) {
+  const parts = line.split("|").map(x => x.trim());
+  if (parts.length < 4) return null;
+  const qm = (parts[1] || "").match(/^([\d.]+)\s*(.+)$/);
+  if (!qm) return null;
+  return { nome: parts[0], qty: parseFloat(qm[1]) || 0, unit: qm[2], prezzo: parseFloat((parts[2] || "").replace("€", "")) || 0, subtotale: parseFloat((parts[3] || "").replace("€", "")) || 0 };
+}
+function parseOrderProducts(order) {
+  return (order["prodotti_dettaglio"] || "").split("\n").map(parseProductLine).filter(Boolean);
+}
+function getOrderTel(o) { return o["telefono"] || ""; }
+
+let xlsxLoaded = false;
+function loadXLSX() {
+  if (xlsxLoaded) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = XLSX_CDN;
+    s.onload = () => { xlsxLoaded = true; resolve(); };
+    s.onerror = () => reject(new Error("Impossibile caricare la libreria Excel."));
+    document.head.appendChild(s);
+  });
+}
+
+// ─── ISCRIZIONI (vista a schermo, on-demand) ──────────────────────────────────
+async function loadIscrizioni() {
+  const btn = document.getElementById("iscr-btn");
+  const box = document.getElementById("iscr-list");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Caricamento...';
+  try {
+    const data = await callAdmin("getIscrizioni");
+    const iscr = data.iscrizioni || [];
+    if (!iscr.length) {
+      box.innerHTML = '<div class="empty">Nessuna iscrizione ricevuta.</div>';
+    } else {
+      box.innerHTML = iscr.map(i => {
+        const ts = i["created_at"] ? new Date(i["created_at"]).toLocaleDateString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+        return `<div class="iscr-item">
+          <div class="iscr-nome">${esc(i["nome"])}</div>
+          <div class="iscr-meta">${esc(i["citta"]||"")} · ${esc(i["telefono"]||"")} · ${ts}</div>
+          ${i["commenti"] ? `<div class="iscr-comm">${esc(i["commenti"])}</div>` : ""}
+        </div>`;
+      }).join("");
+    }
+  } catch (e) {
+    box.innerHTML = `<div class="msg-err">Errore: ${esc(e.fromServer ? e.message : (e.name === "AbortError" ? "Il server non risponde." : e.message))}</div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = "↻ Carica iscrizioni";
+}
+
+// ─── EXCEL EXPORT CENTRALIZZATO ───────────────────────────────────────────────
+async function exportExcelTutti() {
+  const btn = document.getElementById("excel-btn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Preparazione...';
+  try {
+    await loadXLSX();
+    const data = await callAdmin("getOrdersAll");
+    const orders = data.orders || [];
+
+    const wb = XLSX.utils.book_new();
+
+    // Foglio 1: dettaglio ordini (tutti i giorni)
+    const rows = [["Giorno","Settimana","Cliente","Telefono","Prodotto","Qtà","Unità","Prezzo €","Subtotale €"]];
+    orders.forEach(o => { parseOrderProducts(o).forEach(p => { rows.push([o["giorno"]||"", o["settimana"]||"", o["cliente"]||"", getOrderTel(o), p.nome, p.qty, p.unit, p.prezzo, p.subtotale]); }); });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [{wch:11},{wch:22},{wch:20},{wch:14},{wch:26},{wch:7},{wch:10},{wch:10},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, "Ordini");
+
+    // Foglio 2: riepilogo per cliente (tutti i giorni)
+    const rRows = [["Giorno","Cliente","Telefono","Totale €","Note"]];
+    orders.forEach(o => rRows.push([o["giorno"]||"", o["cliente"]||"", getOrderTel(o), parseFloat(o["totale"])||0, o["note"]||""]));
+    const ws2 = XLSX.utils.aoa_to_sheet(rRows);
+    ws2["!cols"] = [{wch:11},{wch:20},{wch:14},{wch:10},{wch:30}];
+    XLSX.utils.book_append_sheet(wb, ws2, "Riepilogo");
+
+    // Foglio 3: storico completo (stessa fonte, non serve una seconda chiamata)
+    const sRows = [["Anno","Giorno","Settimana","Data ordine","Cliente","Telefono","Prodotto","Qtà","Unità","Prezzo €","Subtotale €","Note"]];
+    orders.forEach(o => {
+      const ts = o["timestamp"] ? new Date(o["timestamp"]) : null;
+      const tsStr = ts ? ts.toLocaleString("it-IT") : "";
+      const anno = ts ? ts.getFullYear() : "";
+      parseOrderProducts(o).forEach(p => {
+        sRows.push([anno, o["giorno"]||"", o["settimana"]||"", tsStr, o["cliente"]||"", getOrderTel(o), p.nome, p.qty, p.unit, p.prezzo, p.subtotale, o["note"]||""]);
+      });
+    });
+    const ws3 = XLSX.utils.aoa_to_sheet(sRows.length > 1 ? sRows : [sRows[0], ["(nessun ordine in archivio)"]]);
+    ws3["!cols"] = [{wch:7},{wch:11},{wch:22},{wch:16},{wch:18},{wch:14},{wch:26},{wch:7},{wch:10},{wch:10},{wch:12},{wch:24}];
+    XLSX.utils.book_append_sheet(wb, ws3, "Storico ordini");
+
+    // Foglio 4: iscrizioni liste
+    try {
+      const di = await callAdmin("getIscrizioni");
+      const iscr = di.iscrizioni || [];
+      const iRows = [["Data","Nome","Telefono","Città","Commenti"]];
+      iscr.forEach(i => {
+        const ts = i["created_at"] ? new Date(i["created_at"]).toLocaleString("it-IT") : "";
+        iRows.push([ts, i["nome"]||"", i["telefono"]||"", i["citta"]||"", i["commenti"]||""]);
+      });
+      const ws4 = XLSX.utils.aoa_to_sheet(iRows.length > 1 ? iRows : [iRows[0], ["(nessuna iscrizione)"]]);
+      ws4["!cols"] = [{wch:16},{wch:20},{wch:14},{wch:14},{wch:34}];
+      XLSX.utils.book_append_sheet(wb, ws4, "Iscrizioni");
+    } catch (e) { /* iscrizioni non disponibili: il file esce comunque con gli altri fogli */ }
+
+    const today = new Date().toISOString().slice(0,10).replace(/-/g,"");
+    XLSX.writeFile(wb, `VFF_tutti_i_giorni_${today}.xlsx`);
+    showMsg("ok", "✓ File Excel scaricato.");
+  } catch (e) {
+    showMsg("err", e.name === "AbortError" ? "Il server non risponde." : e.fromServer ? "Errore dal server: " + e.message : "Errore: " + e.message);
+  }
+  btn.disabled = false;
+  btn.innerHTML = "↓ Scarica Excel — tutti i giorni";
+}
+
+init();
+</script>
+
+</body>
+</html>

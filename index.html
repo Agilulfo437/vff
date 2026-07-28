@@ -2,10 +2,220 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0;url=ordine_consegna_sabato.html">
-<title>Verdura Felice Biodinamica</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Verdura e Frutta Felice — Azienda Agricola Biodinamica</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g:#2d6b47;--gd:#1e4d32;--gl:#eaf4ee;--gm:#74b893;
+  --sand:#f6f3ee;--t:#222;--tm:#7a736a;--b:#ddd8ce;
+  --red:#b03030;--redl:#fdf1f0;--r:13px;--rs:8px;
+}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--sand);color:var(--t);min-height:100vh;}
+header{background:var(--gd);padding:26px 20px 22px;text-align:center;}
+header h1{color:#fff;font-size:21px;font-family:Georgia,serif;font-weight:normal;letter-spacing:.4px;}
+header p{color:rgba(255,255,255,.65);font-size:13px;margin-top:6px;line-height:1.6;}
+.wrap{max-width:480px;margin:0 auto;padding:16px 14px;}
+.card{background:#fff;border:1px solid var(--b);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.card h2{font-family:Georgia,serif;font-weight:normal;font-size:18px;color:var(--gd);margin-bottom:9px;}
+.card p{font-size:14px;line-height:1.75;color:var(--t);}
+.card p + p{margin-top:9px;}
+.sec-lbl{font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.6px;margin:18px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--b);}
+/* Form iscrizione */
+.field{margin-bottom:11px;}
+.field-lbl{font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block;}
+input[type=text],input[type=tel],select{width:100%;padding:12px 13px;font-size:16px;border:1.5px solid var(--b);border-radius:var(--rs);background:#fff;color:var(--t);outline:none;font-family:inherit;-webkit-appearance:none;}
+select{background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a736a' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;background-size:12px;padding-right:36px;}
+input:focus,select:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(45,107,71,.1);}
+input.err,select.err{border-color:var(--red)!important;}
+.sbtn{width:100%;padding:15px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:bold;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;margin-top:4px;}
+.sbtn:active{opacity:.8;}
+.sbtn:disabled{opacity:.4;cursor:not-allowed;}
+.errbox{background:var(--redl);color:var(--red);border-radius:var(--rs);padding:11px 13px;font-size:13px;margin-bottom:12px;line-height:1.5;}
+.privacy{font-size:11px;color:var(--tm);text-align:center;margin-top:10px;line-height:1.6;}
+/* Esito iscrizione */
+.ok-box{text-align:center;padding:26px 16px;}
+.ok-ico{width:62px;height:62px;background:var(--gl);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 15px;font-size:30px;}
+.ok-box h3{font-family:Georgia,serif;font-weight:normal;font-size:20px;color:var(--gd);margin-bottom:9px;}
+.ok-box p{font-size:14px;color:var(--tm);line-height:1.7;}
+/* Instagram */
+.ig-wrap{text-align:center;margin-top:6px;}
+.ig-link{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:10px 18px;background:#fff;border:1.5px solid #f0c0d0;border-radius:10px;text-decoration:none;}
+.ig-link span{font-size:14px;font-weight:500;color:#c2185b;letter-spacing:0.01em;}
+footer{text-align:center;padding:22px;font-size:11px;color:var(--tm);line-height:1.6;}
+</style>
 </head>
 <body>
-<p>Reindirizzamento in corso... <a href="ordine_consegna_sabato.html">Clicca qui</a> se non vieni reindirizzato.</p>
+
+<header>
+  <h1>🌿 Verdura e Frutta Felice</h1>
+  <p>Azienda Agricola Biodinamica<br>Valeria Mascarello</p>
+</header>
+
+<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="ig-icon" viewBox="0 0 22 22">
+    <circle cx="11" cy="11" r="11" fill="#fce4ec"/>
+    <rect x="6" y="6" width="10" height="10" rx="3" stroke="#c2185b" stroke-width="1.5" fill="none"/>
+    <circle cx="11" cy="11" r="2.5" stroke="#c2185b" stroke-width="1.5" fill="none"/>
+    <circle cx="14.2" cy="7.8" r="0.8" fill="#c2185b"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2>Frutta e verdura di stagione</h2>
+    <p>Coltiviamo secondo il metodo <strong>biodinamico</strong>: nessun prodotto di sintesi, terra viva, raccolto fresco e consegnato nel giro di poche ore.</p>
+    <p>Ogni settimana pubblichiamo la lista di quello che c'è davvero nell'orto. Tu scegli, noi prepariamo.</p>
+  </div>
+
+  <div class="sec-lbl">Liste di distribuzione</div>
+
+  <div class="card" id="iscr-card">
+    <div id="iscr-form">
+      <p style="margin-bottom:14px;">Abbiamo liste di distribuzione per <strong>Alassio</strong>, <strong>Imperia</strong> e <strong>Sanremo</strong>. Lascia i tuoi dati e Valeria ti contatta.</p>
+
+      <div id="iscr-err" class="errbox" style="display:none;"></div>
+
+      <div class="field">
+        <label class="field-lbl" for="i-nome">Il tuo nome *</label>
+        <input type="text" id="i-nome" placeholder="Nome e cognome" autocomplete="name"/>
+      </div>
+      <div class="field">
+        <label class="field-lbl" for="i-tel">Telefono *</label>
+        <input type="tel" id="i-tel" placeholder="Es. 3331234567" autocomplete="tel" inputmode="numeric"/>
+      </div>
+      <div class="field">
+        <label class="field-lbl" for="i-citta">Città *</label>
+        <select id="i-citta">
+          <option value="">Scegli la città…</option>
+          <option value="Alassio">Alassio</option>
+          <option value="Imperia">Imperia</option>
+          <option value="Sanremo">Sanremo</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-lbl" for="i-commenti">Commenti <span style="text-transform:none;letter-spacing:0;">(facoltativo)</span></label>
+        <input type="text" id="i-commenti" placeholder="Note, richieste particolari…" autocomplete="off"/>
+      </div>
+
+      <button class="sbtn" id="iscr-btn" onclick="doIscrizione()">Iscrivimi alla lista</button>
+      <p class="privacy">I dati servono solo a ricontattarti per le consegne e non vengono comunicati a terzi. Puoi chiederne la cancellazione in qualsiasi momento.</p>
+    </div>
+
+    <div id="iscr-ok" class="ok-box" style="display:none;">
+      <div class="ok-ico">🌱</div>
+      <h3>Iscrizione ricevuta!</h3>
+      <p>Grazie <strong id="iscr-ok-nome"></strong>, ti abbiamo aggiunto alla lista di <strong id="iscr-ok-citta"></strong>.<br>Valeria ti contatterà appena la distribuzione è pronta.</p>
+    </div>
+  </div>
+
+  <div class="ig-wrap">
+    <p style="font-size:13px;color:var(--tm);line-height:1.6;">Seguici su Instagram per conoscere meglio l'Azienda Biodinamica Valeria Mascarello</p>
+    <a href="https://www.instagram.com/mascarellovaleria" target="_blank" class="ig-link">
+      <svg width="22" height="22"><use href="#ig-icon"/></svg>
+      <span>@mascarellovaleria</span>
+    </a>
+  </div>
+
+</div>
+
+<footer>
+  Azienda Agricola Biodinamica Valeria Mascarello<br>
+  verdurafelice.it
+</footer>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const SUPABASE_URL = "https://ojzojxpncbapqheiaitm.supabase.co";
+// Chiave PUBBLICA (publishable). Sicura in browser: con la RLS puo' solo
+// inserire iscrizioni, mai leggerle.
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_WWRxn3WLUOcBB36Mh-a3Qg_REICiiQ5";
+const FETCH_TIMEOUT_MS = 15000;
+const PHONE_MIN_DIGITS = 9;
+const PHONE_MAX_DIGITS = 10;
+const CITTA_VALIDE = ["Alassio", "Imperia", "Sanremo"];
+// ─────────────────────────────────────────────────────────────────────────────
+
+function sbHeaders(key) {
+  // Le chiavi nuove (sb_publishable/sb_secret) NON vanno in Authorization: Bearer,
+  // solo nell'header apikey. Mandare Bearer le farebbe rifiutare da Supabase.
+  return { "Content-Type": "application/json", "apikey": key };
+}
+function sbUrl(table, params) {
+  return SUPABASE_URL + "/rest/v1/" + table + (params ? "?" + params : "");
+}
+function fetchWithTimeout(url, options, ms) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ms || FETCH_TIMEOUT_MS);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));
+}
+
+function showIscrErr(msg) {
+  const eb = document.getElementById("iscr-err");
+  eb.textContent = msg;
+  eb.style.display = "block";
+  eb.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+async function doIscrizione() {
+  const elNome     = document.getElementById("i-nome");
+  const elTel      = document.getElementById("i-tel");
+  const elCitta    = document.getElementById("i-citta");
+  const elCommenti = document.getElementById("i-commenti");
+  const btn        = document.getElementById("iscr-btn");
+
+  const nome     = (elNome.value || "").trim();
+  const tel      = (elTel.value || "").trim();
+  const citta    = elCitta.value;
+  const commenti = (elCommenti.value || "").trim();
+
+  [elNome, elTel, elCitta].forEach(el => el.classList.remove("err"));
+  document.getElementById("iscr-err").style.display = "none";
+
+  // Validazione
+  if (nome.length < 2) {
+    elNome.classList.add("err");
+    return showIscrErr("Inserisci il tuo nome.");
+  }
+  const digits = tel.replace(/\D/g, "");
+  if (digits.length < PHONE_MIN_DIGITS || digits.length > PHONE_MAX_DIGITS) {
+    elTel.classList.add("err");
+    return showIscrErr("Inserisci un numero di telefono valido (" + PHONE_MIN_DIGITS + "-" + PHONE_MAX_DIGITS + " cifre).");
+  }
+  if (!CITTA_VALIDE.includes(citta)) {
+    elCitta.classList.add("err");
+    return showIscrErr("Scegli la città che ti interessa.");
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Invio in corso...";
+  try {
+    const payload = { nome: nome, telefono: digits, citta: citta };
+    if (commenti) payload.commenti = commenti;
+    const res = await fetchWithTimeout(sbUrl("iscrizioni"), {
+      method: "POST",
+      headers: { ...sbHeaders(SUPABASE_PUBLISHABLE_KEY), "Prefer": "return=minimal" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Il server ha rifiutato l'iscrizione.");
+    }
+    document.getElementById("iscr-ok-nome").textContent  = nome;
+    document.getElementById("iscr-ok-citta").textContent = citta;
+    document.getElementById("iscr-form").style.display = "none";
+    document.getElementById("iscr-ok").style.display   = "block";
+    document.getElementById("iscr-card").scrollIntoView({ behavior: "smooth", block: "center" });
+  } catch (e) {
+    showIscrErr(e.name === "AbortError"
+      ? "Il server non risponde. Riprova tra qualche istante."
+      : "Errore durante l'invio: " + (e.message || "Riprova più tardi."));
+    btn.disabled = false;
+    btn.textContent = "Iscrivimi alla lista";
+  }
+}
+</script>
+
 </body>
 </html>

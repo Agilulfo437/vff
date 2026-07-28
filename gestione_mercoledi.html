@@ -115,7 +115,7 @@ body,html{background:#fff;}
 </head>
 <body>
 
-<div id="login-screen" class="login-screen">
+<div id="login-screen" class="login-screen" style="display:none;">
   <div class="login-box">
     <div class="login-logo">🌿</div>
     <h2>Verdura e Frutta Felice</h2>
@@ -265,7 +265,6 @@ async function callAdmin(action, payload) {
   data = await res.json().catch(() => ({}));
   if (res.status === 401) {
     // Password non più valida → forza nuovo login
-    sessionStorage.removeItem("vff_auth_mercoledi");
     sessionStorage.removeItem("vff_admin_pwd");
     throw new Error("Sessione scaduta o password errata. Ricarica la pagina e rientra.");
   }
@@ -401,7 +400,6 @@ async function checkPwd() {
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.ok) {
       sessionStorage.setItem("vff_admin_pwd", pwd);
-      sessionStorage.setItem("vff_auth_mercoledi", "1");
       document.getElementById("login-screen").style.display = "none";
       document.getElementById("app").style.display = "block";
       errEl.textContent = "";
@@ -419,10 +417,16 @@ async function checkPwd() {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-function init() {
-  if (sessionStorage.getItem("vff_auth_mercoledi") === "1") {
-    document.getElementById("login-screen").style.display = "none";
+async function init() {
+  let authed = false;
+  if (getAdminPwd()) {
+    try { await callAdmin("ping"); authed = true; } catch (e) { /* password non valida */ }
+  }
+  if (authed) {
     document.getElementById("app").style.display = "block";
+  } else {
+    sessionStorage.removeItem("vff_admin_pwd");
+    document.getElementById("login-screen").style.display = "flex";
   }
   cfg = { shop: "Verdura e Frutta Felice", link: LINK_ORDINE };
   const today = new Date().toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });

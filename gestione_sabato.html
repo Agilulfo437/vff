@@ -114,7 +114,7 @@ body,html{background:#fff;}
 </head>
 <body>
 
-<div id="login-screen" class="login-screen">
+<div id="login-screen" class="login-screen" style="display:none;">
   <div class="login-box">
     <div class="login-logo">🌿</div>
     <h2>Verdura e Frutta Felice</h2>
@@ -241,7 +241,6 @@ function getAdminPwd() {
 
 function forceReLogin() {
   sessionStorage.removeItem("vff_admin_pwd");
-  sessionStorage.removeItem("vff_auth_sabato");
   document.getElementById("app").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
 }
@@ -380,7 +379,6 @@ async function checkPwd() {
   sessionStorage.setItem("vff_admin_pwd", pwd);
   try {
     await callAdmin("ping");
-    sessionStorage.setItem("vff_auth_sabato", "1");
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app").style.display = "block";
   } catch (e) {
@@ -394,10 +392,16 @@ async function checkPwd() {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-function init() {
-  if (sessionStorage.getItem("vff_auth_sabato") === "1") {
-    document.getElementById("login-screen").style.display = "none";
+async function init() {
+  let authed = false;
+  if (getAdminPwd()) {
+    try { await callAdmin("ping"); authed = true; } catch (e) { /* password non valida */ }
+  }
+  if (authed) {
     document.getElementById("app").style.display = "block";
+  } else {
+    sessionStorage.removeItem("vff_admin_pwd");
+    document.getElementById("login-screen").style.display = "flex";
   }
   cfg = { shop: "Verdura e Frutta Felice", link: LINK_ORDINE };
   const today = new Date().toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
